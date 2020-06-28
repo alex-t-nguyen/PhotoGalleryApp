@@ -40,7 +40,6 @@ class PhotoProvider {
   Future<Photo> save(Photo photo) async {
     var dbClient = await db;
     photo.id = await dbClient.insert(TABLE, photo.toMap());
-    close();
     return photo;
   }
 
@@ -55,13 +54,11 @@ class PhotoProvider {
           photos.add(Photo.fromMap(maps[i]));
       }
     }
-    close();
     return photos;
   }
 
   Future<int> getSize() async {
     var dbClient = await db;
-    close();
     return Sqflite.firstIntValue(await dbClient.rawQuery('SELECT COUNT(*) FROM $TABLE'));
   }
 
@@ -76,14 +73,12 @@ class PhotoProvider {
         albums.add(Album.fromMap(maps[i]));
       }
     }
-    close();
     return albums;
   }
 
   Future<Album> saveAlbum(Album album) async {
     var dbClient = await db;
     album.id = await dbClient.insert(TABLE, album.toMap());
-    close();
     return album;
   }
 
@@ -99,9 +94,10 @@ class PhotoProvider {
           numPhotos++;
       }
     }
-    close();
     return numPhotos;
   }
+
+  
   
   Future close() async {
     var dbClient = await db;

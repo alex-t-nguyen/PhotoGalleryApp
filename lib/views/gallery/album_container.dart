@@ -43,15 +43,6 @@ class _AlbumContainerState extends State<AlbumContainer> {
       });
     });
   }
-  
-  addAlbum() async {
-    Album album = Album(
-      title: null,
-      numPhotos: await _photoProvider.getNumPhotosInAlbum(null),
-    );
-    _photoProvider.saveAlbum(album);
-    refreshAlbums();
-  }
 
   @override
   Widget build(BuildContext context) {

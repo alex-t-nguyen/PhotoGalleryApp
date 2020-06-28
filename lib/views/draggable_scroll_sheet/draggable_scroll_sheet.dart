@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
+import 'package:gallery_app/providers/photo_provider.dart';
 import 'package:gallery_app/views/gallery/album_container.dart';
 import 'package:gallery_app/views/gallery/gridview_gallery.dart';
 import 'package:gallery_app/gallery_icons.dart';
@@ -12,7 +14,10 @@ class DraggableScrollSheet extends StatefulWidget {
 }
 
 class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
-  final List<Album> albumList = [
+  PhotoProvider _photoProvider;
+  List<Album> albumList;
+  /*
+    final List<Album> albumList = [
     Album(title: "Empty album", numPhotos: 0),
     Album(title: "Camera", numPhotos: 0),
     Album(title: "Favorites", numPhotos: 1),
@@ -20,6 +25,35 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
     Album(title: "Instagram", numPhotos: 0),
     Album(title: "Photography", numPhotos: 0),
   ];
+  */
+
+  @override
+  initState() {
+    super.initState();
+    albumList = [];
+    _photoProvider = PhotoProvider();
+    refreshAlbums();
+  }
+
+  refreshAlbums() {
+    _photoProvider.getAlbumList().then((albums) {
+      setState(() {
+        albumList.clear();
+        albumList.addAll(albums);
+      });
+    });
+  }
+
+  _addAlbum() async {
+    Album album = Album(
+      title: null,
+      numPhotos: await _photoProvider.getNumPhotosInAlbum(null),
+    );
+    _photoProvider.saveAlbum(album);
+    refreshAlbums();
+  }
+
+  _deleteAlbum() async {}
 
   @override
   Widget build(BuildContext context) {
@@ -67,22 +101,6 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                                     data: albumList.length,
                                     iconColor: const Color(0xff01C699),
                                   ),
-                                  /*
-                                  new Expanded(
-                                    child: Icon(GalleryIcons.picture_outline,
-                                        color: const Color(0xff01C699),
-                                        size: 20),
-                                  ),
-                                  new Expanded(
-                                    child: Icon(GalleryIcons.heart_empty,
-                                        color: const Color(0xff01C699),
-                                        size: 20),
-                                  ),
-                                  new Expanded(
-                                    child: Icon(GalleryIcons.album,
-                                        color: const Color(0xff01C699),
-                                        size: 20),
-                                  ),*/
                                 ],
                               ),
                             );
@@ -100,12 +118,39 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                         }),
                   ),
                 ),
+                Expanded(
+                  child: SpeedDial(
+                    animatedIcon: AnimatedIcons.menu_close,
+                    closeManually: true,
+                    child: Icon(Icons.menu),
+                    overlayColor: Colors.black,
+                    overlayOpacity: 0.2,
+                    curve: Curves.easeIn,
+                    children: [
+                      SpeedDialChild(
+                        child: Icon(Icons.add),
+                        label: "Add album",
+                        backgroundColor: Colors.grey,
+                        labelBackgroundColor: Colors.white70,
+                        onTap: () => _addAlbum(),
+                      ),
+                      SpeedDialChild(
+                        child: Icon(Icons.delete_outline),
+                        backgroundColor: Colors.red,
+                        labelBackgroundColor: Colors.white70,
+                        label: "Delete album",
+                        onTap: () => _deleteAlbum(),
+                      )
+                    ],
+                  ),
+                ),
               ],
             );
           },
         ));
   }
 
+/*
   Widget buildAlbum(BuildContext context, int index) {
     return Container(
         child: Card(
@@ -144,4 +189,5 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
               ],
             )));
   }
+  */
 }
