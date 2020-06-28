@@ -1,7 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gallery_app/views/gallery/gridview_gallery.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:gallery_app/gallery_icons.dart';
+import 'package:gallery_app/providers/photo_provider.dart';
 import 'package:gallery_app/views/gallery/album.dart';
+import 'package:gallery_app/views/gallery/feature_icon.dart';
+import 'package:gallery_app/views/gallery/photo.dart';
 
 class DraggableScrollSheet extends StatefulWidget {
   @override
@@ -45,7 +51,26 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                                     .center, //Center Row contents horizontally
                                 crossAxisAlignment: CrossAxisAlignment
                                     .center, //Center Row contents vertically
-                                children: <Widget>[
+                                children: <Widget>[                              
+                                  FeatureIcon(
+                                    icon: GalleryIcons.picture_outline,
+                                    iconSize: 20,
+                                    data: 69,
+                                    iconColor: const Color(0xff01C699),
+                                  ),
+                                  FeatureIcon(
+                                    icon: GalleryIcons.heart_empty,
+                                    iconSize: 20,
+                                    data: 1,
+                                    iconColor: const Color(0xff01C699),
+                                  ),
+                                  FeatureIcon(
+                                    icon: GalleryIcons.album,
+                                    iconSize: 20,
+                                    data: albumList.length,
+                                    iconColor: const Color(0xff01C699),
+                                  ),
+                                  /*
                                   new Expanded(
                                     child: Icon(GalleryIcons.picture_outline,
                                         color: const Color(0xff01C699),
@@ -60,12 +85,21 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                                     child: Icon(GalleryIcons.album,
                                         color: const Color(0xff01C699),
                                         size: 20),
-                                  ),
+                                  ),*/
                                 ],
                               ),
                             );
                           }
-                          return buildAlbum(context, index);
+                          return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => GridViewGallery(
+                                            itemHolder:
+                                                albumList[index].title)));
+                              },
+                              child: buildAlbum(context, index));
                         }),
                   ),
                 ),
@@ -78,33 +112,39 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
   Widget buildAlbum(BuildContext context, int index) {
     return Container(
         child: Card(
-          color: const Color(0xff000000),
+            color: const Color(0xff000000),
             child: Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(top: 80.0, bottom: 4.0),
-          child: Row(
-            children: <Widget>[
-              Text(
-                albumList[index].title,
-                style: TextStyle(fontSize: 23.0, color: Colors.white60),
-              ),
-              Spacer(),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.photo_library, color: Colors.white60),
-              Text(" " + albumList[index].numPhotos.toString(), style: TextStyle(fontSize: 18.0, color: Colors.white60),),
-              Text(albumList[index].numPhotos != 1 ? ' photos' : ' photo', style: TextStyle(fontSize: 18.0, color: Colors.white60),),
-              Spacer(),
-            ],
-          ),
-        )
-      ],
-    )));
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.only(top: 80.0, bottom: 4.0),
+                  child: Row(
+                    children: <Widget>[
+                      Text(
+                        albumList[index].title,
+                        style: TextStyle(fontSize: 23.0, color: Colors.white60),
+                      ),
+                      Spacer(),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(Icons.photo_library, color: Colors.white60),
+                      Text(
+                        " " + albumList[index].numPhotos.toString(),
+                        style: TextStyle(fontSize: 18.0, color: Colors.white60),
+                      ),
+                      Text(
+                        albumList[index].numPhotos != 1 ? ' photos' : ' photo',
+                        style: TextStyle(fontSize: 18.0, color: Colors.white60),
+                      ),
+                      Spacer(),
+                    ],
+                  ),
+                )
+              ],
+            )));
   }
 }
