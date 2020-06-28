@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:io' as io;
+import 'package:gallery_app/views/gallery/models/album.dart';
+import 'package:gallery_app/views/gallery/models/photo.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:gallery_app/views/gallery/photo.dart';
 
 class PhotoProvider {
   static Database _db;
@@ -11,7 +12,9 @@ class PhotoProvider {
   static const String PATH = 'photoPath';
   static const String ALBUM = 'album';
   static const String FAVORITE_NAME = 'favorite';
-  static const int FAVORITE = 0;
+  static const String ALBUM_ID = 'albumID';
+  static const String ALBUM_LIST = 'title';
+  static const String ALBUM_PHOTO_NUM = 'numPhotos';
   static const String TABLE = 'PhotosTable';
   static const String DB_NAME = 'photos.db';
 
@@ -31,12 +34,13 @@ class PhotoProvider {
   }
 
   _onCreate(Database db, int version) async {
-    await db.execute('CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER)');
+    await db.execute('CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER, $ALBUM_ID INTEGER, $ALBUM_LIST TEXT, $ALBUM_PHOTO_NUM INTEGER)');
   }
 
   Future<Photo> save(Photo photo) async {
     var dbClient = await db;
     photo.id = await dbClient.insert(TABLE, photo.toMap());
+    close();
     return photo;
   }
 
@@ -51,14 +55,53 @@ class PhotoProvider {
           photos.add(Photo.fromMap(maps[i]));
       }
     }
+    close();
     return photos;
   }
 
   Future<int> getSize() async {
     var dbClient = await db;
+    close();
     return Sqflite.firstIntValue(await dbClient.rawQuery('SELECT COUNT(*) FROM $TABLE'));
   }
 
+  Future<List<Album>> getAlbumList() async {
+    var dbClient = await db;
+    List<Map> maps = await dbClient.query(TABLE, columns: [ALBUM_ID, ALBUM_LIST, ALBUM_PHOTO_NUM]);
+    List<Album> albums = [];
+    if (maps.length > 0)
+    {
+      for (int i = 0; i < maps.length; i++)
+      {
+        albums.add(Album.fromMap(maps[i]));
+      }
+    }
+    close();
+    return albums;
+  }
+
+  Future<Album> saveAlbum(Album album) async {
+    var dbClient = await db;
+    album.id = await dbClient.insert(TABLE, album.toMap());
+    close();
+    return album;
+  }
+
+  Future<int> getNumPhotosInAlbum(String albumName) async {
+    var dbClient = await db;
+    List<Map> maps = await dbClient.query(TABLE, columns: [ALBUM]);
+    int numPhotos = 0;
+    if(maps.length > 0)
+    {
+      for (int i = 0; i < maps.length; i++)
+      {
+        if (Photo.fromMap(maps[i]).album == albumName)
+          numPhotos++;
+      }
+    }
+    close();
+    return numPhotos;
+  }
   
   Future close() async {
     var dbClient = await db;

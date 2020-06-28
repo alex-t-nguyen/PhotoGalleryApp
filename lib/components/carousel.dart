@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'carousel_indicator.dart';
+import '../components/carousel_indicator.dart';
 
 class Carousel extends StatefulWidget {
   Carousel();

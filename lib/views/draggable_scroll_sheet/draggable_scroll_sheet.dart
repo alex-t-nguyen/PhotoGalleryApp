@@ -1,13 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:gallery_app/views/gallery/gridview_gallery.dart';
-import 'package:image_picker/image_picker.dart';
 
+import 'package:gallery_app/views/gallery/album_container.dart';
+import 'package:gallery_app/views/gallery/gridview_gallery.dart';
 import 'package:gallery_app/gallery_icons.dart';
-import 'package:gallery_app/providers/photo_provider.dart';
-import 'package:gallery_app/views/gallery/album.dart';
+import 'package:gallery_app/views/gallery/models/album.dart';
 import 'package:gallery_app/views/gallery/feature_icon.dart';
-import 'package:gallery_app/views/gallery/photo.dart';
 
 class DraggableScrollSheet extends StatefulWidget {
   @override
@@ -16,12 +13,12 @@ class DraggableScrollSheet extends StatefulWidget {
 
 class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
   final List<Album> albumList = [
-    Album("Empty album", 0, "empyPath"),
-    Album("Camera", 0, "path1"),
-    Album("Favorites", 1, "path1"),
-    Album("Download", 0, "path1"),
-    Album("Instagram", 0, "path1"),
-    Album("Photography", 0, "path1"),
+    Album(title: "Empty album", numPhotos: 0),
+    Album(title: "Camera", numPhotos: 0),
+    Album(title: "Favorites", numPhotos: 1),
+    Album(title: "Download", numPhotos: 0),
+    Album(title: "Instagram", numPhotos: 0),
+    Album(title: "Photography", numPhotos: 0),
   ];
 
   @override
@@ -51,7 +48,7 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                                     .center, //Center Row contents horizontally
                                 crossAxisAlignment: CrossAxisAlignment
                                     .center, //Center Row contents vertically
-                                children: <Widget>[                              
+                                children: <Widget>[
                                   FeatureIcon(
                                     icon: GalleryIcons.picture_outline,
                                     iconSize: 20,
@@ -99,7 +96,7 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                                             itemHolder:
                                                 albumList[index].title)));
                               },
-                              child: buildAlbum(context, index));
+                              child: AlbumContainer(index));
                         }),
                   ),
                 ),

@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:image_size_getter/image_size_getter.dart';
-
-import 'photo.dart';
+import 'models/photo.dart';
 
 class StaggeredGrid extends StatefulWidget {
 

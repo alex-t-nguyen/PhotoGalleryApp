@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:gallery_app/providers/photo_provider.dart';
-import 'package:gallery_app/views/gallery/album.dart';
-import 'package:gallery_app/views/gallery/photo.dart';
 
+import 'models/photo.dart';
 import 'staggered_grid.dart';
 
 class GridViewGallery extends StatefulWidget {
@@ -47,13 +45,13 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     });
   }
 
-  loadImages() async {
+  addImageFromGallery() async {
     var pickedFile = await imagePicker.getImage(source: ImageSource.gallery);
     setState(() {
       imagePath = File(pickedFile.path);
     });
     Photo photo = Photo(
-        id: await photoProvider.getSize(),
+        //id: await photoProvider.getSize(),
         photoPath: pickedFile.path.toString(),
         album: widget.itemHolder,
         favorite: 0);
@@ -67,7 +65,7 @@ class _GridViewGalleryState extends State<GridViewGallery> {
       appBar: AppBar(
         title: Text(widget.itemHolder),
         actions: <Widget>[
-          IconButton(icon: Icon(Icons.add), onPressed: loadImages),
+          IconButton(icon: Icon(Icons.add), onPressed: addImageFromGallery),
         ],
       ),
       body: StaggeredGrid(photosList: photosList, numPhotos: photosList.length),
