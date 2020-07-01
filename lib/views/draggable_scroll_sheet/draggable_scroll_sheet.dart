@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import 'package:gallery_app/providers/photo_provider.dart';
 import 'package:gallery_app/views/gallery/album_container.dart';
@@ -9,6 +8,11 @@ import 'package:gallery_app/views/gallery/models/album.dart';
 import 'package:gallery_app/views/gallery/feature_icon.dart';
 
 class DraggableScrollSheet extends StatefulWidget {
+  final int totalPhotos;
+  final int numFavoritePhotos;
+
+  DraggableScrollSheet({this.totalPhotos, this.numFavoritePhotos});
+
   @override
   _DraggableScrollSheetState createState() => _DraggableScrollSheetState();
 }
@@ -16,6 +20,9 @@ class DraggableScrollSheet extends StatefulWidget {
 class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
   PhotoProvider _photoProvider;
   List<Album> albumList;
+
+  List<int> photoData;
+
   /*
     final List<Album> albumList = [
     Album(title: "Empty album", numPhotos: 0),
@@ -32,7 +39,8 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
     super.initState();
     albumList = [];
     _photoProvider = PhotoProvider();
-    refreshAlbums();
+    photoData = [0, 0];
+    //refreshAlbums();
   }
 
   refreshAlbums() {
@@ -44,19 +52,11 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
     });
   }
 
-  _addAlbum() async {
-    Album album = Album(
-      title: null,
-      numPhotos: await _photoProvider.getNumPhotosInAlbum(null),
-    );
-    _photoProvider.saveAlbum(album);
-    refreshAlbums();
-  }
-
-  _deleteAlbum() async {}
-
   @override
   Widget build(BuildContext context) {
+    _photoProvider.getPhotoData().then((value) {
+      photoData = value;
+    });
     return Container(
         height: MediaQuery.of(context).size.height,
         child: DraggableScrollableSheet(
@@ -69,79 +69,74 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                 Expanded(
                   child: Container(
                     color: const Color(0xff141518),
-                    child: ListView.builder(
-                        controller: scrollController,
-                        itemCount: albumList.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          if (index == 0) {
-                            return Container(
-                              color: const Color(0xff000000),
-                              height: 80.0,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment
-                                    .center, //Center Row contents horizontally
-                                crossAxisAlignment: CrossAxisAlignment
-                                    .center, //Center Row contents vertically
-                                children: <Widget>[
-                                  FeatureIcon(
-                                    icon: GalleryIcons.picture_outline,
-                                    iconSize: 20,
-                                    data: 69,
-                                    iconColor: const Color(0xff01C699),
-                                  ),
-                                  FeatureIcon(
-                                    icon: GalleryIcons.heart_empty,
-                                    iconSize: 20,
-                                    data: 1,
-                                    iconColor: const Color(0xff01C699),
-                                  ),
-                                  FeatureIcon(
-                                    icon: GalleryIcons.album,
-                                    iconSize: 20,
-                                    data: albumList.length,
-                                    iconColor: const Color(0xff01C699),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                          return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => GridViewGallery(
-                                            itemHolder:
-                                                albumList[index].title)));
-                              },
-                              child: AlbumContainer(index));
-                        }),
-                  ),
-                ),
-                Expanded(
-                  child: SpeedDial(
-                    animatedIcon: AnimatedIcons.menu_close,
-                    closeManually: true,
-                    child: Icon(Icons.menu),
-                    overlayColor: Colors.black,
-                    overlayOpacity: 0.2,
-                    curve: Curves.easeIn,
-                    children: [
-                      SpeedDialChild(
-                        child: Icon(Icons.add),
-                        label: "Add album",
-                        backgroundColor: Colors.grey,
-                        labelBackgroundColor: Colors.white70,
-                        onTap: () => _addAlbum(),
-                      ),
-                      SpeedDialChild(
-                        child: Icon(Icons.delete_outline),
-                        backgroundColor: Colors.red,
-                        labelBackgroundColor: Colors.white70,
-                        label: "Delete album",
-                        onTap: () => _deleteAlbum(),
-                      )
-                    ],
+                    child: FutureBuilder<List>(
+                      future: _photoProvider.getAlbumList(),
+                      builder:
+                          (BuildContext context, AsyncSnapshot<List> snapshot) {
+                        if (snapshot.hasData) {
+                          refreshAlbums();
+                          return ListView.builder(
+                              controller: scrollController,
+                              itemCount: snapshot.data.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                if (index == 0) {
+                                  return Container(
+                                    color: const Color(0xff000000),
+                                    height: 80.0,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment
+                                          .center, //Center Row contents horizontally
+                                      crossAxisAlignment: CrossAxisAlignment
+                                          .center, //Center Row contents vertically
+                                      children: <Widget>[
+                                        FeatureIcon(
+                                          icon: GalleryIcons.picture_outline,
+                                          iconSize: 20,
+                                          data: photoData[1],
+                                          iconColor: const Color(0xff01C699),
+                                        ),
+                                        FeatureIcon(
+                                          icon: GalleryIcons.heart_empty,
+                                          iconSize: 20,
+                                          data: photoData[0],
+                                          iconColor: const Color(0xff01C699),
+                                        ),
+                                        FeatureIcon(
+                                          icon: GalleryIcons.album,
+                                          iconSize: 20,
+                                          data: snapshot.data.length - 1,
+                                          iconColor: const Color(0xff01C699),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }                              
+                                return GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  GridViewGallery(
+                                                      itemHolder:
+                                                          albumList[index]
+                                                              .title)));
+                                    },
+                                    child: AlbumContainer(
+                                      index: index,
+                                      albumTitle: snapshot.data[index].title,
+                                      albumNumPhotos: snapshot.data[index].numPhotos,
+                                    ));
+                              });
+                        }
+                        return Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                const Color(0xff01C699)),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -150,6 +145,17 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
         ));
   }
 
+  Future<String> getAlbumTitle(index) async {
+    Album album = await _photoProvider.getAlbum(index);
+    //debugPrint('Album Title: ' + album.title);
+    return album.title;
+  }
+
+  Future<int> getAlbumNumPhotos(index) async {
+    Album album = await _photoProvider.getAlbum(index);
+    //debugPrint('Album Number of Photos: ' + album.numPhotos.toString());
+    return album.numPhotos;
+  }
 /*
   Widget buildAlbum(BuildContext context, int index) {
     return Container(

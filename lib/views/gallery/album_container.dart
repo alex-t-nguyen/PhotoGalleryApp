@@ -3,19 +3,20 @@ import 'models/album.dart';
 import 'package:gallery_app/providers/photo_provider.dart';
 
 class AlbumContainer extends StatefulWidget {
-
   final int index;
+  final String albumTitle;
+  final int albumNumPhotos;
 
-  AlbumContainer(this.index);
+  AlbumContainer({this.index, this.albumTitle, this.albumNumPhotos});
 
   @override
   _AlbumContainerState createState() => _AlbumContainerState();
 }
 
 class _AlbumContainerState extends State<AlbumContainer> {
-  
   PhotoProvider _photoProvider;
   List<Album> albumList;
+
   /*
   List<Album> albumList = [
     Album("Empty album", 0),
@@ -32,16 +33,6 @@ class _AlbumContainerState extends State<AlbumContainer> {
     super.initState();
     albumList = [];
     _photoProvider = PhotoProvider();
-    refreshAlbums();
-  }
-
-  refreshAlbums() {
-    _photoProvider.getAlbumList().then((albums) {
-      setState(() {
-        albumList.clear();
-        albumList.addAll(albums);
-      });
-    });
   }
 
   @override
@@ -56,7 +47,7 @@ class _AlbumContainerState extends State<AlbumContainer> {
                   child: Row(
                     children: <Widget>[
                       Text(
-                        albumList[widget.index].title,
+                        widget.albumTitle,
                         style: TextStyle(fontSize: 23.0, color: Colors.white60),
                       ),
                       Spacer(),
@@ -69,11 +60,11 @@ class _AlbumContainerState extends State<AlbumContainer> {
                     children: <Widget>[
                       Icon(Icons.photo_library, color: Colors.white60),
                       Text(
-                        " " + albumList[widget.index].numPhotos.toString(),
+                        ' ' + widget.albumNumPhotos.toString(),
                         style: TextStyle(fontSize: 18.0, color: Colors.white60),
                       ),
                       Text(
-                        albumList[widget.index].numPhotos != 1 ? ' photos' : ' photo',
+                        widget.albumNumPhotos != 1 ? ' photos' : ' photo',
                         style: TextStyle(fontSize: 18.0, color: Colors.white60),
                       ),
                       Spacer(),
@@ -82,5 +73,17 @@ class _AlbumContainerState extends State<AlbumContainer> {
                 )
               ],
             )));
+  }
+
+  Future<String> getAlbumTitle(index) async {
+    Album album = await _photoProvider.getAlbum(index);
+    //debugPrint('Album Title: ' + album.title);
+    return album.title;
+  }
+
+  Future<int> getAlbumNumPhotos(index) async {
+    Album album = await _photoProvider.getAlbum(index);
+    //debugPrint('Album Number of Photos: ' + album.numPhotos.toString());
+    return album.numPhotos;
   }
 }

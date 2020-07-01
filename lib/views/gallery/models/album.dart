@@ -7,15 +7,15 @@ class Album {
 
   Map<String, dynamic> toMap() {
     var map = <String, dynamic> {
-      'id': id,
+      'albumID': id,
       'title': title,
-      'numAlbumPhotos': numPhotos,
+      'numPhotos': numPhotos,
     };
     return map;
   }
 
   Album.fromMap(Map<String, dynamic> map) {
-    id = map['id'];
+    id = map['albumID'];
     title = map['title'];
     numPhotos = map['numPhotos'];
   }
