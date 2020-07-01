@@ -1,31 +1,62 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:gallery_app/views/gallery/gridview_gallery.dart';
-import 'package:image_picker/image_picker.dart';
 
-import 'package:gallery_app/gallery_icons.dart';
 import 'package:gallery_app/providers/photo_provider.dart';
-import 'package:gallery_app/views/gallery/album.dart';
+import 'package:gallery_app/views/gallery/album_container.dart';
+import 'package:gallery_app/views/gallery/gridview_gallery.dart';
+import 'package:gallery_app/gallery_icons.dart';
+import 'package:gallery_app/views/gallery/models/album.dart';
 import 'package:gallery_app/views/gallery/feature_icon.dart';
-import 'package:gallery_app/views/gallery/photo.dart';
 
 class DraggableScrollSheet extends StatefulWidget {
+  final int totalPhotos;
+  final int numFavoritePhotos;
+
+  DraggableScrollSheet({this.totalPhotos, this.numFavoritePhotos});
+
   @override
   _DraggableScrollSheetState createState() => _DraggableScrollSheetState();
 }
 
 class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
-  final List<Album> albumList = [
-    Album("Empty album", 0, "empyPath"),
-    Album("Camera", 0, "path1"),
-    Album("Favorites", 1, "path1"),
-    Album("Download", 0, "path1"),
-    Album("Instagram", 0, "path1"),
-    Album("Photography", 0, "path1"),
+  PhotoProvider _photoProvider;
+  List<Album> albumList;
+
+  List<int> photoData;
+
+  /*
+    final List<Album> albumList = [
+    Album(title: "Empty album", numPhotos: 0),
+    Album(title: "Camera", numPhotos: 0),
+    Album(title: "Favorites", numPhotos: 1),
+    Album(title: "Download", numPhotos: 0),
+    Album(title: "Instagram", numPhotos: 0),
+    Album(title: "Photography", numPhotos: 0),
   ];
+  */
+
+  @override
+  initState() {
+    super.initState();
+    albumList = [];
+    _photoProvider = PhotoProvider();
+    photoData = [0, 0];
+    //refreshAlbums();
+  }
+
+  refreshAlbums() {
+    _photoProvider.getAlbumList().then((albums) {
+      setState(() {
+        albumList.clear();
+        albumList.addAll(albums);
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    _photoProvider.getPhotoData().then((value) {
+      photoData = value;
+    });
     return Container(
         height: MediaQuery.of(context).size.height,
         child: DraggableScrollableSheet(
@@ -38,69 +69,74 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                 Expanded(
                   child: Container(
                     color: const Color(0xff141518),
-                    child: ListView.builder(
-                        controller: scrollController,
-                        itemCount: albumList.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          if (index == 0) {
-                            return Container(
-                              color: const Color(0xff000000),
-                              height: 80.0,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment
-                                    .center, //Center Row contents horizontally
-                                crossAxisAlignment: CrossAxisAlignment
-                                    .center, //Center Row contents vertically
-                                children: <Widget>[                              
-                                  FeatureIcon(
-                                    icon: GalleryIcons.picture_outline,
-                                    iconSize: 20,
-                                    data: 69,
-                                    iconColor: const Color(0xff01C699),
-                                  ),
-                                  FeatureIcon(
-                                    icon: GalleryIcons.heart_empty,
-                                    iconSize: 20,
-                                    data: 1,
-                                    iconColor: const Color(0xff01C699),
-                                  ),
-                                  FeatureIcon(
-                                    icon: GalleryIcons.album,
-                                    iconSize: 20,
-                                    data: albumList.length,
-                                    iconColor: const Color(0xff01C699),
-                                  ),
-                                  /*
-                                  new Expanded(
-                                    child: Icon(GalleryIcons.picture_outline,
-                                        color: const Color(0xff01C699),
-                                        size: 20),
-                                  ),
-                                  new Expanded(
-                                    child: Icon(GalleryIcons.heart_empty,
-                                        color: const Color(0xff01C699),
-                                        size: 20),
-                                  ),
-                                  new Expanded(
-                                    child: Icon(GalleryIcons.album,
-                                        color: const Color(0xff01C699),
-                                        size: 20),
-                                  ),*/
-                                ],
-                              ),
-                            );
-                          }
-                          return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => GridViewGallery(
-                                            itemHolder:
-                                                albumList[index].title)));
-                              },
-                              child: buildAlbum(context, index));
-                        }),
+                    child: FutureBuilder<List>(
+                      future: _photoProvider.getAlbumList(),
+                      builder:
+                          (BuildContext context, AsyncSnapshot<List> snapshot) {
+                        if (snapshot.hasData) {
+                          refreshAlbums();
+                          return ListView.builder(
+                              controller: scrollController,
+                              itemCount: snapshot.data.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                if (index == 0) {
+                                  return Container(
+                                    color: const Color(0xff000000),
+                                    height: 80.0,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment
+                                          .center, //Center Row contents horizontally
+                                      crossAxisAlignment: CrossAxisAlignment
+                                          .center, //Center Row contents vertically
+                                      children: <Widget>[
+                                        FeatureIcon(
+                                          icon: GalleryIcons.picture_outline,
+                                          iconSize: 20,
+                                          data: photoData[1],
+                                          iconColor: const Color(0xff01C699),
+                                        ),
+                                        FeatureIcon(
+                                          icon: GalleryIcons.heart_empty,
+                                          iconSize: 20,
+                                          data: photoData[0],
+                                          iconColor: const Color(0xff01C699),
+                                        ),
+                                        FeatureIcon(
+                                          icon: GalleryIcons.album,
+                                          iconSize: 20,
+                                          data: snapshot.data.length - 1,
+                                          iconColor: const Color(0xff01C699),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }                              
+                                return GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  GridViewGallery(
+                                                      itemHolder:
+                                                          albumList[index]
+                                                              .title)));
+                                    },
+                                    child: AlbumContainer(
+                                      index: index,
+                                      albumTitle: snapshot.data[index].title,
+                                      albumNumPhotos: snapshot.data[index].numPhotos,
+                                    ));
+                              });
+                        }
+                        return Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                const Color(0xff01C699)),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -109,6 +145,18 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
         ));
   }
 
+  Future<String> getAlbumTitle(index) async {
+    Album album = await _photoProvider.getAlbum(index);
+    //debugPrint('Album Title: ' + album.title);
+    return album.title;
+  }
+
+  Future<int> getAlbumNumPhotos(index) async {
+    Album album = await _photoProvider.getAlbum(index);
+    //debugPrint('Album Number of Photos: ' + album.numPhotos.toString());
+    return album.numPhotos;
+  }
+/*
   Widget buildAlbum(BuildContext context, int index) {
     return Container(
         child: Card(
@@ -147,4 +195,5 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
               ],
             )));
   }
+  */
 }

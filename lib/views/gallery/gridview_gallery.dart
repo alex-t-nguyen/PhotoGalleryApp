@@ -1,13 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:gallery_app/providers/photo_provider.dart';
-import 'package:gallery_app/views/gallery/album.dart';
-import 'package:gallery_app/views/gallery/photo.dart';
 
+import 'models/photo.dart';
 import 'staggered_grid.dart';
+import 'models/photo_settings.dart';
 
 class GridViewGallery extends StatefulWidget {
   final String itemHolder;
@@ -19,8 +18,6 @@ class GridViewGallery extends StatefulWidget {
 }
 
 class _GridViewGalleryState extends State<GridViewGallery> {
-
-
   Future<File> imageFile;
   File imagePath;
   PhotoProvider photoProvider;
@@ -47,18 +44,28 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     });
   }
 
-  loadImages() async {
+  addImageFromGallery() async {
     var pickedFile = await imagePicker.getImage(source: ImageSource.gallery);
-    setState(() {
-      imagePath = File(pickedFile.path);
-    });
-    Photo photo = Photo(
-        id: await photoProvider.getSize(),
-        photoPath: pickedFile.path.toString(),
-        album: widget.itemHolder,
-        favorite: 0);
-    photoProvider.save(photo);
+    if (pickedFile != null) {
+      setState(() {
+        imagePath = File(pickedFile.path);
+      });
+      Photo photo = Photo(
+          id: await photoProvider.getSize(),
+          photoPath: pickedFile.path.toString(),
+          album: widget.itemHolder,
+          favorite: 0);
+      photoProvider.save(photo);
+    }
     refreshImages();
+  }
+
+  deleteImageFromGallery() async {}
+
+  moveImageFromGallery() async {}
+
+  shareImages() async {
+
   }
 
   @override
@@ -66,31 +73,29 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.itemHolder),
+        leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context)),
         actions: <Widget>[
-          IconButton(icon: Icon(Icons.add), onPressed: loadImages),
+          IconButton(
+              icon: Icon(Icons.delete), onPressed: deleteImageFromGallery),
+          IconButton(icon: Icon(Icons.share), onPressed: shareImages,),
+          PopupMenuButton<String>(
+            onSelected: settingsAction,
+            itemBuilder: (BuildContext context) {
+              return PhotoSettings.photoSettingsList.map((String selection) {
+                return PopupMenuItem<String>(
+                    value: selection, child: Text(selection));
+              }).toList();
+            },
+          ),
         ],
       ),
-      body: StaggeredGrid(photosList: photosList, numPhotos: photosList.length),
-      /*
-      StaggeredGridView.extent(
-        maxCrossAxisExtent: MediaQuery.of(context).size.width,
-        children: _buildGridTiles(photosList.length)),
-          Padding(
-              padding: EdgeInsets.all(3.0),
-              child: GridView.count(
-                crossAxisCount: 2,
-                childAspectRatio: 1.0,
-                mainAxisSpacing: 4.0,
-                crossAxisSpacing: 4.0,
-                children: photosList.map((photo) {
-                  return Image.file(File(photo.photoPath));
-                }).toList(),
-              )),*/
-
-      //),
+      body: StaggeredGrid(photosList: photosList, numPhotos: photosList.length, albumName: widget.itemHolder,),
     );
   }
-  
+
+/*
   List<Widget> _buildGridTiles(numPhotos) {
     List<Container> imageContainers =
         List<Container>.generate(numPhotos, (index) {
@@ -101,5 +106,14 @@ class _GridViewGalleryState extends State<GridViewGallery> {
       ));
     });
     return imageContainers;
+  }
+  */
+
+  void settingsAction(String selection) {
+    if (selection == PhotoSettings.ADD) {
+      addImageFromGallery();
+    } else if (selection == PhotoSettings.MOVE) {
+      moveImageFromGallery();
+    }
   }
 }
