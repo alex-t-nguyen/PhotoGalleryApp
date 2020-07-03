@@ -120,7 +120,7 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
                                                   GridViewGallery(
                                                       itemHolder:
                                                           albumList[index]
-                                                              .title)));
+                                                              .title, albumRefresh: refreshAlbums,)));
                                     },
                                     child: AlbumContainer(
                                       index: index,

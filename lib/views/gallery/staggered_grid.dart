@@ -1,18 +1,19 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gallery_app/gallery_icons.dart';
 import 'package:gallery_app/providers/photo_provider.dart';
-import 'package:image_size_getter/image_size_getter.dart';
 import 'models/photo.dart';
 
 class StaggeredGrid extends StatefulWidget {
   final List<Photo> photosList;
   final int numPhotos;
   final String albumName;
+  final VoidCallback deleteSelect;
+  final bool deletion;
 
-  StaggeredGrid({this.photosList, this.numPhotos, this.albumName});
+  StaggeredGrid(
+      {this.photosList, this.numPhotos, this.albumName, this.deleteSelect, this.deletion});
 
   @override
   _StaggeredGridState createState() => _StaggeredGridState();
@@ -20,9 +21,11 @@ class StaggeredGrid extends StatefulWidget {
 
 class _StaggeredGridState extends State<StaggeredGrid> {
   final PhotoProvider _photoProvider = PhotoProvider();
+  bool checkBoxValue;
 
   @override
   void initState() {
+    checkBoxValue = false;
     super.initState();
   }
 
@@ -54,16 +57,6 @@ class _StaggeredGridState extends State<StaggeredGrid> {
 */
   List<Widget> _buildGridTile(numPhotos) {
     List<Stack> containers = new List<Stack>.generate(numPhotos, (int index) {
-      /*
-      _photoProvider
-          .checkFavorite(widget.photosList[index].photoPath)
-          .then((favorite) {
-        
-          debugPrint('Favorite: ' + favorite.toString());
-          _isFavorite = favorite;
-     
-      });
-      */
       return Stack(
         alignment: const Alignment(-1.0, 1.0),
         children: <Widget>[
@@ -75,6 +68,20 @@ class _StaggeredGridState extends State<StaggeredGrid> {
               fit: BoxFit.cover,
             ),
           ),
+          Align(
+              alignment: Alignment(-1.0, -1.0),
+              child: Visibility(
+                  visible: widget.deletion,
+                  child: Checkbox(
+                    value: widget.photosList[index].delete == 1 ? true : false,
+                    onChanged: (value) {
+                      setState(() {
+                        markImageDelete(index);
+                        //refreshImages();
+                        widget.photosList[index].delete == 1 ? widget.photosList[index].delete = 0 : widget.photosList[index].delete = 1;
+                      });
+                    },
+                  ))),
           Container(
             height: 30.0,
             width: 30.0,
@@ -89,8 +96,9 @@ class _StaggeredGridState extends State<StaggeredGrid> {
                       color: const Color(0xff01C699),
                     ),
                     onPressed: () {
+                      //widget.deleteSelect();
                       favoriteImage(index);
-                      refreshImages();
+                      //refreshImages();
                     },
                   )
                 : IconButton(
@@ -98,9 +106,11 @@ class _StaggeredGridState extends State<StaggeredGrid> {
                         color: const Color(0xff01C699)),
                     iconSize: 16.0,
                     onPressed: () {
+                      //widget.deleteSelect();
                       favoriteImage(index);
-                      refreshImages();
-                    },),
+                      //refreshImages();
+                    },
+                  ),
           ),
         ],
       );
@@ -138,6 +148,7 @@ class _StaggeredGridState extends State<StaggeredGrid> {
     */
   }
 
+/*
   int createImageHeight(index) {
     File file = File(widget.photosList[index].photoPath);
     final size = ImageSizGetter.getSize(file);
@@ -161,7 +172,7 @@ class _StaggeredGridState extends State<StaggeredGrid> {
       return 2;
     }
   }
-
+*/
   void favoriteImage(int index) async {
     await _photoProvider.changeFavorite(widget.photosList[index].photoPath);
     refreshImages();
@@ -174,5 +185,10 @@ class _StaggeredGridState extends State<StaggeredGrid> {
         widget.photosList.addAll(imgs);
       });
     });
+  }
+
+  markImageDelete(int index) async {
+    await _photoProvider.markForDelete(widget.photosList[index].photoPath);
+    //refreshImages();
   }
 }
