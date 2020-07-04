@@ -4,8 +4,9 @@ class Photo {
   String album;
   int favorite;
   int delete;
+  int move;
 
-  Photo({this.id, this.photoPath, this.album, this.favorite, this.delete});
+  Photo({this.id, this.photoPath, this.album, this.favorite, this.delete, this.move});
 
   Map<String, dynamic> toMap() {
     var map = <String, dynamic> {
@@ -14,6 +15,7 @@ class Photo {
       'album': album,
       'favorite': favorite,
       'deletion': delete,
+      'moving': move,
     };
     return map;
   }
@@ -24,5 +26,6 @@ class Photo {
     album = map['album'];
     favorite = map['favorite'];
     delete = map['deletion'];
+    move = map['moving'];
   }
 }

@@ -11,9 +11,15 @@ class StaggeredGrid extends StatefulWidget {
   final String albumName;
   final VoidCallback deleteSelect;
   final bool deletion;
+  final bool moving;
 
   StaggeredGrid(
-      {this.photosList, this.numPhotos, this.albumName, this.deleteSelect, this.deletion});
+      {this.photosList,
+      this.numPhotos,
+      this.albumName,
+      this.deleteSelect,
+      this.deletion,
+      this.moving});
 
   @override
   _StaggeredGridState createState() => _StaggeredGridState();
@@ -68,7 +74,7 @@ class _StaggeredGridState extends State<StaggeredGrid> {
               fit: BoxFit.cover,
             ),
           ),
-          Align(
+          Align(  // Delete photo checkbox
               alignment: Alignment(-1.0, -1.0),
               child: Visibility(
                   visible: widget.deletion,
@@ -78,7 +84,25 @@ class _StaggeredGridState extends State<StaggeredGrid> {
                       setState(() {
                         markImageDelete(index);
                         //refreshImages();
-                        widget.photosList[index].delete == 1 ? widget.photosList[index].delete = 0 : widget.photosList[index].delete = 1;
+                        widget.photosList[index].delete == 1
+                            ? widget.photosList[index].delete = 0
+                            : widget.photosList[index].delete = 1;
+                      });
+                    },
+                  ))),
+          Align(  // Move photo checkbox
+              alignment: Alignment(-1.0, -1.0),
+              child: Visibility(
+                  visible: widget.moving,
+                  child: Checkbox(
+                    value: widget.photosList[index].move == 1 ? true : false,
+                    onChanged: (value) {
+                      setState(() {
+                        markImageMove(index);
+                        //refreshImages();
+                        widget.photosList[index].move == 1
+                            ? widget.photosList[index].move = 0
+                            : widget.photosList[index].move = 1;
                       });
                     },
                   ))),
@@ -190,5 +214,9 @@ class _StaggeredGridState extends State<StaggeredGrid> {
   markImageDelete(int index) async {
     await _photoProvider.markForDelete(widget.photosList[index].photoPath);
     //refreshImages();
+  }
+
+  markImageMove(int index) async  {
+    await _photoProvider.markForMove(widget.photosList[index].photoPath);
   }
 }

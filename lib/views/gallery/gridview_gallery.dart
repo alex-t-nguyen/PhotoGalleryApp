@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gallery_app/views/dialogs/move_photos_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:gallery_app/providers/photo_provider.dart';
@@ -12,7 +13,8 @@ class GridViewGallery extends StatefulWidget {
   final String itemHolder;
   final VoidCallback albumRefresh;
 
-  GridViewGallery({Key key, @required this.itemHolder, this.albumRefresh}) : super(key: key);
+  GridViewGallery({Key key, @required this.itemHolder, this.albumRefresh})
+      : super(key: key);
 
   @override
   _GridViewGalleryState createState() => _GridViewGalleryState();
@@ -25,6 +27,7 @@ class _GridViewGalleryState extends State<GridViewGallery> {
   List<Photo> photosList;
   ImagePicker imagePicker;
   bool deletion;
+  bool moving;
   final scaffoldState = GlobalKey<ScaffoldState>();
 
   @override
@@ -34,6 +37,7 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     photoProvider = PhotoProvider();
     imagePicker = ImagePicker();
     deletion = false;
+    moving = false;
     refreshImages();
   }
 
@@ -59,7 +63,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
           photoPath: pickedFile.path.toString(),
           album: widget.itemHolder,
           favorite: 0,
-          delete: 0);
+          delete: 0,
+          move: 0);
       photoProvider.save(photo);
     }
     refreshImages();
@@ -79,12 +84,22 @@ class _GridViewGalleryState extends State<GridViewGallery> {
 
   removeDeleteWhenLiked() {
     //setState(() {
-      photoProvider.resetDeletion();
-      deletion = false;
+    photoProvider.resetDeletion();
+    deletion = false;
     //});
   }
 
-  moveImageFromGallery() async {}
+  moveImageFromGallery() async {
+    setState(() {
+      if (moving) {
+        photoProvider.resetMoving();
+        moving = false;
+      } else {
+        moving = true;
+        refreshImages();
+      }
+    });
+  }
 
   shareImages() async {}
 
@@ -96,18 +111,34 @@ class _GridViewGalleryState extends State<GridViewGallery> {
         title: Text(widget.itemHolder),
         leading: IconButton(
             icon: Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context)),
+            onPressed: () {
+              deleteImageFromGallery();
+              moveImageFromGallery();
+              deletion = false;
+              moving = false;
+              Navigator.pop(context);
+            }),
         actions: <Widget>[
           IconButton(
               icon: Icon(Icons.delete),
               onPressed: () {
+                if (moving) {
+                  moving = false;
+                  Navigator.pop(context);
+                }
                 deleteImageFromGallery();
                 showDeleteBottomSheet(scaffoldState, deletion);
               }),
           IconButton(
-            icon: Icon(Icons.share),
-            onPressed: shareImages,
-          ),
+              icon: Icon(Icons.share),
+              onPressed: () {
+                if (moving || deletion) {
+                  moving = false;
+                  deletion = false;
+                  Navigator.pop(context);
+                }
+                shareImages;
+              }),
           PopupMenuButton<String>(
             onSelected: settingsAction,
             itemBuilder: (BuildContext context) {
@@ -125,15 +156,26 @@ class _GridViewGalleryState extends State<GridViewGallery> {
         albumName: widget.itemHolder,
         deleteSelect: removeDeleteWhenLiked,
         deletion: deletion,
+        moving: moving,
       ),
     );
   }
 
   void settingsAction(String selection) {
     if (selection == PhotoSettings.ADD) {
+      if (moving || deletion) {
+        moving = false;
+        deletion = false;
+        Navigator.pop(context);
+      }
       addImageFromGallery();
     } else if (selection == PhotoSettings.MOVE) {
+      if (deletion) {
+        deletion = false;
+        Navigator.pop(context);
+      }
       moveImageFromGallery();
+      showMoveBottomSheet(scaffoldState, moving);
     }
   }
 
@@ -189,8 +231,75 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     }
   }
 
+  void showMoveBottomSheet(GlobalKey<ScaffoldState> key, bool move) {
+    if (move) {
+      var bottomSheetController =
+          key.currentState.showBottomSheet((context) => Container(
+                color: Theme.of(context).canvasColor,
+                height: 50,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(10),
+                      topRight: const Radius.circular(10),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      FlatButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            moveImageFromGallery();
+                          },
+                          child: Text('Cancel')),
+                      FlatButton(
+                          onPressed: () {
+                            moveImages(widget.itemHolder);
+                            //Navigator.pop(context);
+                            //moveImageFromGallery();
+                            refreshImages();
+                            widget.albumRefresh();
+                            //moveImageFromGallery();
+                          },
+                          child: Text('Move')),
+                    ],
+                  ),
+                ),
+              ));
+      bottomSheetController.closed.then((value) {
+        setState(() {
+          moving = false;
+          refreshImages();
+        });
+      });
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   void deleteImages(String albumName) async {
     await photoProvider.deleteImages(albumName);
+    refreshImages();
+  }
+
+  void moveImagesD(String albumName, String destinationAlbum) async {
+    await photoProvider.moveImages(albumName, destinationAlbum);
+    refreshImages();
+  }
+
+  void moveImages(String albumOrigin) async {
+    String albumDestination = await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return MovePhotosDialog();
+        });
+    if (albumDestination != null) {
+      await photoProvider.moveImages(albumOrigin, albumDestination);
+    }
+    Navigator.pop(context);
+    moveImageFromGallery();
     refreshImages();
   }
 }
