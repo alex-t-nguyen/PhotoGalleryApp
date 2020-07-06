@@ -1,20 +1,29 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:gallery_app/providers/photo_provider.dart';
+import 'package:gallery_app/views/gallery/models/feature_photo.dart';
 
 import 'carousel_indicator.dart';
 
 class Carousel extends StatefulWidget {
-  Carousel();
+  final List<FeaturePhoto> feature;
+
+  Carousel({this.feature});
 
   @override
   _CarouselState createState() => _CarouselState();
 }
 
 class _CarouselState extends State<Carousel> {
+  PhotoProvider _photoProvider = PhotoProvider();
   PageController pageController;
+  bool pageFlag;
 
-  int _repeat(int index) => images.length * ((index / images.length).floor());
+  int _repeat(int index) =>
+      widget.feature.length * ((index / widget.feature.length).floor());
   int _index(int index) =>
-      index > images.length - 1 ? index - _repeat(index) : index;
+      index > widget.feature.length - 1 ? index - _repeat(index) : index;
 
   PageController get controller => pageController;
 
@@ -30,21 +39,33 @@ class _CarouselState extends State<Carousel> {
     Image(image: AssetImage('assets/images/Yuru Camp Wallpaper.jpg')),
   ];
   */
+
   List<String> images = [
+    /*
     'https://c4.wallpaperflare.com/wallpaper/902/955/807/yuru-camp-nadeshiko-kagamihara-rin-shima-chiaki-oogaki-wallpaper-preview.jpg',
     'https://free4kwallpapers.com/uploads/originals/2019/04/02/mount-fuji-from-the-yuru-camp-intro-wallpaper.jpg',
     'https://images.alphacoders.com/555/thumb-1920-555565.jpg',
     'https://wallpapercave.com/wp/wp4286320.jpg'
+    */
   ];
 
   @override
   void initState() {
     super.initState();
-    pageController = PageController(initialPage: 101, viewportFraction: 0.75);
+    pageController = PageController(initialPage: 99, viewportFraction: 0.75);
+    pageFlag = true;
+    //getFeatures();
+    //getFeaturePaths();
   }
 
   @override
   Widget build(BuildContext context) {
+    /*if (widget.feature.length > 0) {
+      for (FeaturePhoto feature in widget.feature) {
+        images.add(feature.path);
+      }
+    }*/
+    //debugPrint(images.length.toString());
     return /*Scaffold(
       appBar: AppBar(
         title: Text('Photo Gallery'),
@@ -59,6 +80,12 @@ class _CarouselState extends State<Carousel> {
               controller: pageController,
               //itemCount: images.length, //Giving item count makes scrolling finite
               itemBuilder: (context, position) {
+                if (pageController.hasClients && pageFlag) {
+                  pageFlag = false;
+                  pageController.animateToPage(100,
+                      duration: Duration(microseconds: 1),
+                      curve: Curves.easeInOut);
+                }
                 return imageSlider(position);
               }),
         ),
@@ -87,7 +114,29 @@ class _CarouselState extends State<Carousel> {
       },
       child: Container(
           //margin: EdgeInsets.all(3),
-          child: Image.network(images[_index(index)], fit: BoxFit.cover)),
+          child: widget.feature.length > 0
+              ? Image.file(File(widget.feature[_index(index)].path),
+                  fit: BoxFit.cover)
+              : Center(
+                  child: Text(
+                  'No feature images available',
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                  textAlign: TextAlign.center,
+                ))),
     );
   }
+
+/*
+  getFeatures() async {
+    featuresList = await _photoProvider.getFeatureImages();
+  }
+
+  getFeaturePaths() {
+    setState(() {
+      for (FeaturePhoto feature in featuresList) {
+        images.add(feature.path);
+      }
+    });
+  }
+  */
 }
