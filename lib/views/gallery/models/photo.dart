@@ -3,8 +3,10 @@ class Photo {
   String photoPath;
   String album;
   int favorite;
+  int delete;
+  int move;
 
-  Photo({this.id, this.photoPath, this.album, this.favorite});
+  Photo({this.id, this.photoPath, this.album, this.favorite, this.delete, this.move});
 
   Map<String, dynamic> toMap() {
     var map = <String, dynamic> {
@@ -12,6 +14,8 @@ class Photo {
       'photoPath': photoPath,
       'album': album,
       'favorite': favorite,
+      'deletion': delete,
+      'moving': move,
     };
     return map;
   }
@@ -21,5 +25,7 @@ class Photo {
     photoPath = map['photoPath'];
     album = map['album'];
     favorite = map['favorite'];
+    delete = map['deletion'];
+    move = map['moving'];
   }
 }

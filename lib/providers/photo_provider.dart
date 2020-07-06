@@ -13,6 +13,8 @@ class PhotoProvider {
   static const String PATH = 'photoPath';
   static const String ALBUM = 'album';
   static const String FAVORITE_NAME = 'favorite';
+  static const String DELETE = 'deletion';
+  static const String MOVE = 'moving';
   static const String ALBUM_ID = 'albumID';
   static const String ALBUM_LIST = 'title';
   static const String ALBUM_PHOTO_NUM = 'numPhotos';
@@ -43,7 +45,7 @@ class PhotoProvider {
 
   _onCreate(Database db, int version) async {
     await db.execute(
-        'CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER, $ALBUM_ID INTEGER, $ALBUM_LIST TEXT, $ALBUM_PHOTO_NUM INTEGER)');
+        'CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER, $DELETE INTEGER, $MOVE INTEGER, $ALBUM_ID INTEGER, $ALBUM_LIST TEXT, $ALBUM_PHOTO_NUM INTEGER)');
     db.rawInsert(
         'INSERT INTO $TABLE ($ALBUM_ID, $ALBUM_LIST, $ALBUM_PHOTO_NUM) VALUES(?, ?, ?)',
         [0, 'Select album', 0]);
@@ -69,7 +71,7 @@ class PhotoProvider {
   Future<List<Photo>> getPhotos(String albumName) async {
     var dbClient = await db; // call database getter function
     List<Map> maps =
-        await dbClient.query(TABLE, columns: [ID, PATH, ALBUM, FAVORITE_NAME]);
+        await dbClient.query(TABLE, columns: [ID, PATH, ALBUM, FAVORITE_NAME, DELETE, MOVE]);
     List<Photo> photos = [];
     if (maps.length > 0) {
       for (int i = 0; i < maps.length; i++) {
@@ -95,7 +97,9 @@ class PhotoProvider {
     if (maps.length > 0) {
       for (int i = 0; i < maps.length; i++) {
         if (Album.fromMap(maps[i]).title != null)
+        {
           albums.add(Album.fromMap(maps[i]));
+        }
       }
     }
     return albums;
@@ -103,11 +107,12 @@ class PhotoProvider {
 
   Future<List<Photo>> getPhotosList() async {
     var dbClient = await db;
-    List<Map> maps = await dbClient.query(TABLE, columns: [ID, PATH, ALBUM, FAVORITE_NAME]);
+    List<Map> maps = await dbClient
+        .query(TABLE, columns: [ID, PATH, ALBUM, FAVORITE_NAME, DELETE, MOVE]);
     List<Photo> photos = [];
-    if(maps.length > 0) {
-      for(int i = 0; i < maps.length; i++) {
-        if(Photo.fromMap(maps[i]).photoPath != null)
+    if (maps.length > 0) {
+      for (int i = 0; i < maps.length; i++) {
+        if (Photo.fromMap(maps[i]).photoPath != null)
           photos.add(Photo.fromMap(maps[i]));
       }
     }
@@ -176,12 +181,12 @@ class PhotoProvider {
 
   Future<bool> checkFavorite(String path) async {
     var dbClient = await db;
-    List<Map> maps = await dbClient.query(TABLE, columns: [PATH, FAVORITE_NAME]);
+    List<Map> maps =
+        await dbClient.query(TABLE, columns: [PATH, FAVORITE_NAME]);
     //debugPrint(maps.length.toString());
     if (maps.length > 0) {
       for (int i = 0; i < maps.length; i++) {
-        if (Photo.fromMap(maps[i]).photoPath == path)
-        {
+        if (Photo.fromMap(maps[i]).photoPath == path) {
           debugPrint(Photo.fromMap(maps[i]).favorite.toString());
           return Photo.fromMap(maps[i]).favorite == 1 ? true : false;
         }
@@ -194,20 +199,137 @@ class PhotoProvider {
     var dbClient = await db;
     List<Photo> photosList = await getPhotosList();
     Photo temp = Photo();
-    for(int i = 0; i < photosList.length; i++)
-    {
-      if(photosList[i].photoPath == path)
-      {
+    for (int i = 0; i < photosList.length; i++) {
+      if (photosList[i].photoPath == path) {
         temp = photosList[i];
         break;
       }
     }
-    if(temp.favorite == 0)
+    debugPrint(temp.favorite.toString());
+    if (temp.favorite == 0)
       temp.favorite = 1;
-    else 
+    else
       temp.favorite = 0;
-    await dbClient.update(TABLE, temp.toMap(),
-        where: '$PATH = ?', whereArgs: [path]);
+    await dbClient
+        .update(TABLE, temp.toMap(), where: '$PATH = ?', whereArgs: [path]);
+  }
+
+  Future<void> markForDelete(String path) async {
+    var dbClient = await db;
+    List<Photo> photosList = await getPhotosList();
+    Photo temp = Photo();
+    for (int i = 0; i < photosList.length; i++) {
+      if (photosList[i].photoPath == path) {
+        temp = photosList[i];
+        break;
+      }
+    }
+    //debugPrint(temp.delete.toString());
+    if (temp.delete == 0)
+      temp.delete = 1;
+    else
+      temp.delete = 0;
+    //debugPrint(temp.toMap().toString());
+    await dbClient
+        .update(TABLE, temp.toMap(), where: '$PATH = ?', whereArgs: [path]);
+  }
+
+  Future<void> resetDeletion() async {
+    var dbClient = await db;
+    List<Photo> photosList = await getPhotosList();
+    for (int i = 0; i < photosList.length; i++) {
+      Photo temp = photosList[i];
+      temp.delete = 0;
+      await dbClient.update(TABLE, temp.toMap(),
+          where: '$PATH = ?', whereArgs: [photosList[i].photoPath]);
+    }
+  }
+
+  Future<void> deleteImages(String albumName) async {
+    var dbClient = await db;
+    await dbClient.delete(TABLE,
+        where: '$ALBUM = ? and $DELETE = ?', whereArgs: [albumName, 1]);
+    List<Album> albums = await getAlbumList();
+    Album album = Album();
+    for(int i = 0; i < albums.length; i++)
+    {
+      if(albums[i].title == albumName)
+      {
+        album = albums[i];
+        break;
+      }
+    }
+    album.numPhotos = await getNumPhotosInAlbum(albumName);
+    dbClient.update(TABLE, album.toMap(), where: '$ALBUM_LIST = ?', whereArgs: [albumName]);
+  }
+
+  Future<void> resetMoving() async {
+    var dbClient = await db;
+    List<Photo> photosList = await getPhotosList();
+    for (int i = 0; i < photosList.length; i++) {
+      Photo temp = photosList[i];
+      temp.move = 0;
+      await dbClient.update(TABLE, temp.toMap(),
+          where: '$PATH = ?', whereArgs: [photosList[i].photoPath]);
+    }
+  }
+
+  Future<void> moveImages(String albumName, String destinationAlbum) async {
+    var dbClient = await db;
+    List<Photo> photosList = await getPhotos(albumName);
+    for(Photo temp in photosList)
+    {
+      if(temp.move == 1)
+      {
+        temp.album = destinationAlbum;
+        await dbClient.update(TABLE, temp.toMap(), where: '$ALBUM = ? and $PATH = ?', whereArgs: [albumName, temp.photoPath]);
+      }
+    }
+    // Update original album num photos
+    List<Album> albums = await getAlbumList();
+    Album album = Album();
+    for(int i = 0; i < albums.length; i++)
+    {
+      if(albums[i].title == albumName)
+      {
+        album = albums[i];
+        break;
+      }
+    }
+    album.numPhotos = await getNumPhotosInAlbum(albumName);
+    dbClient.update(TABLE, album.toMap(), where: '$ALBUM_LIST = ?', whereArgs: [albumName]);
+
+    // Update destination album num photos
+    for(int i = 0; i < albums.length; i++)
+    {
+      if(albums[i].title == destinationAlbum)
+      {
+        album = albums[i];
+        break;
+      }
+    }
+    album.numPhotos = await getNumPhotosInAlbum(destinationAlbum);
+    dbClient.update(TABLE, album.toMap(), where: '$ALBUM_LIST = ?', whereArgs: [destinationAlbum]);
+  }
+
+  Future<void> markForMove(String path) async {
+    var dbClient = await db;
+    List<Photo> photosList = await getPhotosList();
+    Photo temp = Photo();
+    for (int i = 0; i < photosList.length; i++) {
+      if (photosList[i].photoPath == path) {
+        temp = photosList[i];
+        break;
+      }
+    }
+    //debugPrint(temp.move.toString());
+    if (temp.move == 0)
+      temp.move = 1;
+    else
+      temp.move = 0;
+    //debugPrint(temp.toMap().toString());
+    await dbClient
+        .update(TABLE, temp.toMap(), where: '$PATH = ?', whereArgs: [path]);
   }
 
   Future close() async {

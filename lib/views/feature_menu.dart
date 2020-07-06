@@ -12,7 +12,7 @@ class FeatureMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-   // _photoProvider.deleteDB();
+    //_photoProvider.deleteDB();
     return Scaffold(
       appBar: AppBar(title: Text('Feature Menu')),
       body: Stack(
