@@ -147,13 +147,11 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
 
   Future<String> getAlbumTitle(index) async {
     Album album = await _photoProvider.getAlbum(index);
-    //debugPrint('Album Title: ' + album.title);
     return album.title;
   }
 
   Future<int> getAlbumNumPhotos(index) async {
     Album album = await _photoProvider.getAlbum(index);
-    //debugPrint('Album Number of Photos: ' + album.numPhotos.toString());
     return album.numPhotos;
   }
 /*
