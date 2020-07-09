@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' as io;
 import 'package:flutter/cupertino.dart';
 import 'package:gallery_app/views/gallery/models/album.dart';
+import 'package:gallery_app/views/gallery/models/feature_photo.dart';
 import 'package:gallery_app/views/gallery/models/photo.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -18,6 +19,9 @@ class PhotoProvider {
   static const String ALBUM_ID = 'albumID';
   static const String ALBUM_LIST = 'title';
   static const String ALBUM_PHOTO_NUM = 'numPhotos';
+  static const String FEATURE_ID = 'featureID';
+  static const String FEATURES = 'featurePath';
+  static const String DELETE_FEATURE = 'featureDelete';
   static const String TABLE = 'PhotosTable';
   static const String DB_NAME = 'photos.db';
 
@@ -45,7 +49,7 @@ class PhotoProvider {
 
   _onCreate(Database db, int version) async {
     await db.execute(
-        'CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER, $DELETE INTEGER, $MOVE INTEGER, $ALBUM_ID INTEGER, $ALBUM_LIST TEXT, $ALBUM_PHOTO_NUM INTEGER)');
+        'CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER, $DELETE INTEGER, $MOVE INTEGER, $ALBUM_ID INTEGER, $ALBUM_LIST TEXT, $ALBUM_PHOTO_NUM INTEGER, $FEATURE_ID INTEGER, $FEATURES TEXT, $DELETE_FEATURE INTEGER)');
     db.rawInsert(
         'INSERT INTO $TABLE ($ALBUM_ID, $ALBUM_LIST, $ALBUM_PHOTO_NUM) VALUES(?, ?, ?)',
         [0, 'Select album', 0]);
@@ -70,8 +74,8 @@ class PhotoProvider {
 
   Future<List<Photo>> getPhotos(String albumName) async {
     var dbClient = await db; // call database getter function
-    List<Map> maps =
-        await dbClient.query(TABLE, columns: [ID, PATH, ALBUM, FAVORITE_NAME, DELETE, MOVE]);
+    List<Map> maps = await dbClient
+        .query(TABLE, columns: [ID, PATH, ALBUM, FAVORITE_NAME, DELETE, MOVE]);
     List<Photo> photos = [];
     if (maps.length > 0) {
       for (int i = 0; i < maps.length; i++) {
@@ -96,8 +100,7 @@ class PhotoProvider {
     List<Album> albums = [];
     if (maps.length > 0) {
       for (int i = 0; i < maps.length; i++) {
-        if (Album.fromMap(maps[i]).title != null)
-        {
+        if (Album.fromMap(maps[i]).title != null) {
           albums.add(Album.fromMap(maps[i]));
         }
       }
@@ -251,16 +254,15 @@ class PhotoProvider {
         where: '$ALBUM = ? and $DELETE = ?', whereArgs: [albumName, 1]);
     List<Album> albums = await getAlbumList();
     Album album = Album();
-    for(int i = 0; i < albums.length; i++)
-    {
-      if(albums[i].title == albumName)
-      {
+    for (int i = 0; i < albums.length; i++) {
+      if (albums[i].title == albumName) {
         album = albums[i];
         break;
       }
     }
     album.numPhotos = await getNumPhotosInAlbum(albumName);
-    dbClient.update(TABLE, album.toMap(), where: '$ALBUM_LIST = ?', whereArgs: [albumName]);
+    dbClient.update(TABLE, album.toMap(),
+        where: '$ALBUM_LIST = ?', whereArgs: [albumName]);
   }
 
   Future<void> resetMoving() async {
@@ -277,39 +279,37 @@ class PhotoProvider {
   Future<void> moveImages(String albumName, String destinationAlbum) async {
     var dbClient = await db;
     List<Photo> photosList = await getPhotos(albumName);
-    for(Photo temp in photosList)
-    {
-      if(temp.move == 1)
-      {
+    for (Photo temp in photosList) {
+      if (temp.move == 1) {
         temp.album = destinationAlbum;
-        await dbClient.update(TABLE, temp.toMap(), where: '$ALBUM = ? and $PATH = ?', whereArgs: [albumName, temp.photoPath]);
+        await dbClient.update(TABLE, temp.toMap(),
+            where: '$ALBUM = ? and $PATH = ?',
+            whereArgs: [albumName, temp.photoPath]);
       }
     }
     // Update original album num photos
     List<Album> albums = await getAlbumList();
     Album album = Album();
-    for(int i = 0; i < albums.length; i++)
-    {
-      if(albums[i].title == albumName)
-      {
+    for (int i = 0; i < albums.length; i++) {
+      if (albums[i].title == albumName) {
         album = albums[i];
         break;
       }
     }
     album.numPhotos = await getNumPhotosInAlbum(albumName);
-    dbClient.update(TABLE, album.toMap(), where: '$ALBUM_LIST = ?', whereArgs: [albumName]);
+    dbClient.update(TABLE, album.toMap(),
+        where: '$ALBUM_LIST = ?', whereArgs: [albumName]);
 
     // Update destination album num photos
-    for(int i = 0; i < albums.length; i++)
-    {
-      if(albums[i].title == destinationAlbum)
-      {
+    for (int i = 0; i < albums.length; i++) {
+      if (albums[i].title == destinationAlbum) {
         album = albums[i];
         break;
       }
     }
     album.numPhotos = await getNumPhotosInAlbum(destinationAlbum);
-    dbClient.update(TABLE, album.toMap(), where: '$ALBUM_LIST = ?', whereArgs: [destinationAlbum]);
+    dbClient.update(TABLE, album.toMap(),
+        where: '$ALBUM_LIST = ?', whereArgs: [destinationAlbum]);
   }
 
   Future<void> markForMove(String path) async {
@@ -322,14 +322,64 @@ class PhotoProvider {
         break;
       }
     }
-    //debugPrint(temp.move.toString());
     if (temp.move == 0)
       temp.move = 1;
     else
       temp.move = 0;
-    //debugPrint(temp.toMap().toString());
     await dbClient
         .update(TABLE, temp.toMap(), where: '$PATH = ?', whereArgs: [path]);
+  }
+
+  Future<List<FeaturePhoto>> getFeatureImages() async {
+    var dbClient = await db;
+    List<Map> maps =
+        await dbClient.query(TABLE, columns: [FEATURE_ID, FEATURES, DELETE_FEATURE]);
+    List<FeaturePhoto> featureList = [];
+    for (int i = 0; i < maps.length; i++) {
+      if (FeaturePhoto.fromMap(maps[i]).path != null)
+        featureList.add(FeaturePhoto.fromMap(maps[i]));
+    }
+    return featureList;
+  }
+
+  Future<void> addFeatureImage(FeaturePhoto featurePhoto) async {
+    var dbClient = await db;
+    featurePhoto.id = await dbClient.insert(TABLE, featurePhoto.toMap());
+  }
+
+  Future<void> deleteFeatures() async {
+    var dbClient = await db;
+    dbClient.delete(TABLE, where: '$DELETE_FEATURE = ?', whereArgs: [1]);
+  }
+
+  Future<void> markFeatureDelete(path) async {
+    var dbClient = await db;
+    List<FeaturePhoto> featureList = await getFeatureImages();
+    FeaturePhoto temp = FeaturePhoto();
+    for(int i = 0; i < featureList.length; i++)
+    {
+      if(featureList[i].path == path)
+      {
+        temp = featureList[i];
+        break;
+      }
+    }
+    if (temp.delete == 0)
+      temp.delete = 1;
+    else
+      temp.delete = 0;
+    await dbClient.update(TABLE, temp.toMap(), where: '$FEATURES = ?', whereArgs: [path]);
+  }
+
+  Future<void> resetDeleteFeatures() async {
+    var dbClient = await db;
+    List<FeaturePhoto> featureList = await getFeatureImages();
+    for (int i = 0; i < featureList.length; i++) {
+      FeaturePhoto temp = featureList[i];
+      temp.delete = 0;
+      await dbClient.update(TABLE, temp.toMap(),
+          where: '$FEATURES = ?', whereArgs: [featureList[i].path]);
+    }
   }
 
   Future close() async {

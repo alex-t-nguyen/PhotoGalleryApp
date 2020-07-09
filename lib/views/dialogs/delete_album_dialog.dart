@@ -62,7 +62,7 @@ class _DeleteAlbumDialogState extends State<DeleteAlbumDialog> {
         ],
       ),
       child: Column(
-         mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text('Select an album', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),),
           DropdownButton(
