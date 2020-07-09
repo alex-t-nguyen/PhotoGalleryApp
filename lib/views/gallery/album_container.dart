@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'models/album.dart';
 import 'package:gallery_app/providers/photo_provider.dart';
+
+import 'models/photo.dart';
 
 class AlbumContainer extends StatefulWidget {
   final int index;
@@ -16,6 +20,7 @@ class AlbumContainer extends StatefulWidget {
 class _AlbumContainerState extends State<AlbumContainer> {
   PhotoProvider _photoProvider;
   List<Album> albumList;
+  List<Photo> photoList;
 
   /*
   List<Album> albumList = [
@@ -32,14 +37,41 @@ class _AlbumContainerState extends State<AlbumContainer> {
   initState() {
     super.initState();
     albumList = [];
+    photoList = [];
     _photoProvider = PhotoProvider();
+    _getImageList();
+  }
+
+  @override
+  void didUpdateWidget(AlbumContainer oldWidget) {
+    _photoProvider.getPhotos(widget.albumTitle).then((value) {
+      photoList.clear();
+      photoList.addAll(value);
+    });
+    super.didUpdateWidget(oldWidget);
+  }
+
+  _getImageList() async {
+    await _photoProvider.getPhotos(widget.albumTitle).then((value) {
+      setState(() {
+        photoList.clear();
+        photoList.addAll(value);
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        child: Card(
-            color: const Color(0xff000000),
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            //colorFilter: ColorFilter.mode(Colors.white.withOpacity(1), BlendMode.dstATop),
+            image: photoList.length > 0 ? FileImage(File(photoList[0].photoPath)) : NetworkImage('https://www.solidbackgrounds.com/images/950x350/950x350-black-solid-color-background.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Card(     
+          color: Colors.transparent,  
             child: Column(
               children: <Widget>[
                 Padding(
@@ -48,7 +80,7 @@ class _AlbumContainerState extends State<AlbumContainer> {
                     children: <Widget>[
                       Text(
                         widget.albumTitle,
-                        style: TextStyle(fontSize: 23.0, color: Colors.white60),
+                        style: TextStyle(fontSize: 23.0, color: Colors.white),
                       ),
                       Spacer(),
                     ],
@@ -58,14 +90,14 @@ class _AlbumContainerState extends State<AlbumContainer> {
                   padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
                   child: Row(
                     children: <Widget>[
-                      Icon(Icons.photo_library, color: Colors.white60),
+                      Icon(Icons.photo_library, color: Colors.white),
                       Text(
                         ' ' + widget.albumNumPhotos.toString(),
-                        style: TextStyle(fontSize: 18.0, color: Colors.white60),
+                        style: TextStyle(fontSize: 18.0, color: Colors.white),
                       ),
                       Text(
                         widget.albumNumPhotos != 1 ? ' photos' : ' photo',
-                        style: TextStyle(fontSize: 18.0, color: Colors.white60),
+                        style: TextStyle(fontSize: 18.0, color: Colors.white),
                       ),
                       Spacer(),
                     ],
