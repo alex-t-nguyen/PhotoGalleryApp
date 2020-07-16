@@ -40,11 +40,11 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
     albumList = [];
     _photoProvider = PhotoProvider();
     photoData = [0, 0];
-    //refreshAlbums();
+    refreshAlbums();
   }
 
-  refreshAlbums() {
-    _photoProvider.getAlbumList().then((albums) {
+  refreshAlbums() async {
+    await _photoProvider.getAlbumList().then((albums) {
       setState(() {
         albumList.clear();
         albumList.addAll(albums);

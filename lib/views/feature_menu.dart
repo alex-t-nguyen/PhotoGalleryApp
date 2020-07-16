@@ -20,12 +20,12 @@ class _FeatureMenuState extends State<FeatureMenu> {
   final PhotoProvider _photoProvider = PhotoProvider();
 
   final ImagePicker _imagePicker = ImagePicker();
-  List<FeaturePhoto> featuresList;
+  List<FeaturePhoto> featuresList = [];
 
   @override
   initState() {
     //_photoProvider.deleteDB();
-    featuresList = _getFeatureList();
+    _getFeatureList();
     super.initState();
   }
 
@@ -91,6 +91,11 @@ class _FeatureMenuState extends State<FeatureMenu> {
   }
 
   _getFeatureList() async {
-    return await _photoProvider.getFeatureImages();
+    await _photoProvider.getFeatureImages().then((value) {
+      setState(() {
+        featuresList.clear();
+        featuresList.addAll(value);
+      });
+    });
   }
 }
