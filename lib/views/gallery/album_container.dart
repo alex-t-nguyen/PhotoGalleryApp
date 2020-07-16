@@ -66,8 +66,8 @@ class _AlbumContainerState extends State<AlbumContainer> {
         decoration: BoxDecoration(
           image: DecorationImage(
             //colorFilter: ColorFilter.mode(Colors.white.withOpacity(1), BlendMode.dstATop),
-            image: photoList.length > 0 ? FileImage(File(photoList[0].photoPath)) : NetworkImage('https://www.solidbackgrounds.com/images/950x350/950x350-black-solid-color-background.jpg'),
-            fit: BoxFit.cover,
+            image: photoList.length > 0 ? FileImage(File(photoList[0].photoPath)) : AssetImage('assets/images/GrayImage.png'),
+            fit: BoxFit.cover,      
           ),
         ),
         child: Card(     

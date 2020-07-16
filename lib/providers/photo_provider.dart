@@ -16,6 +16,7 @@ class PhotoProvider {
   static const String FAVORITE_NAME = 'favorite';
   static const String DELETE = 'deletion';
   static const String MOVE = 'moving';
+  static const String SHARING = 'sharing';
   static const String ALBUM_ID = 'albumID';
   static const String ALBUM_LIST = 'title';
   static const String ALBUM_PHOTO_NUM = 'numPhotos';
@@ -49,7 +50,7 @@ class PhotoProvider {
 
   _onCreate(Database db, int version) async {
     await db.execute(
-        'CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER, $DELETE INTEGER, $MOVE INTEGER, $ALBUM_ID INTEGER, $ALBUM_LIST TEXT, $ALBUM_PHOTO_NUM INTEGER, $FEATURE_ID INTEGER, $FEATURES TEXT, $DELETE_FEATURE INTEGER)');
+        'CREATE TABLE $TABLE ($ID INTEGER, $PATH TEXT, $ALBUM TEXT, $FAVORITE_NAME INTEGER, $DELETE INTEGER, $MOVE INTEGER, $SHARING INTEGER, $ALBUM_ID INTEGER, $ALBUM_LIST TEXT, $ALBUM_PHOTO_NUM INTEGER, $FEATURE_ID INTEGER, $FEATURES TEXT, $DELETE_FEATURE INTEGER)');
     db.rawInsert(
         'INSERT INTO $TABLE ($ALBUM_ID, $ALBUM_LIST, $ALBUM_PHOTO_NUM) VALUES(?, ?, ?)',
         [0, 'Select album', 0]);
@@ -110,8 +111,8 @@ class PhotoProvider {
 
   Future<List<Photo>> getPhotosList() async {
     var dbClient = await db;
-    List<Map> maps = await dbClient
-        .query(TABLE, columns: [ID, PATH, ALBUM, FAVORITE_NAME, DELETE, MOVE]);
+    List<Map> maps = await dbClient.query(TABLE,
+        columns: [ID, PATH, ALBUM, FAVORITE_NAME, DELETE, MOVE, SHARING]);
     List<Photo> photos = [];
     if (maps.length > 0) {
       for (int i = 0; i < maps.length; i++) {
@@ -182,6 +183,18 @@ class PhotoProvider {
     dbClient.delete(TABLE, where: '$ALBUM_LIST = ?', whereArgs: [albumName]);
   }
 
+  Future<int> getNumFavorite() async {
+    var dbClient = await db;
+    List<Map> maps = await dbClient.query(TABLE, columns: [FAVORITE_NAME]);
+    int numFavorites = 0;
+    if (maps.length > 0) {
+      for (int i = 0; i < maps.length; i++) {
+        if (Photo.fromMap(maps[i]).favorite == 1) numFavorites++;
+      }
+    }
+    return numFavorites;
+  }
+
   Future<bool> checkFavorite(String path) async {
     var dbClient = await db;
     List<Map> maps =
@@ -208,7 +221,6 @@ class PhotoProvider {
         break;
       }
     }
-    debugPrint(temp.favorite.toString());
     if (temp.favorite == 0)
       temp.favorite = 1;
     else
@@ -332,8 +344,8 @@ class PhotoProvider {
 
   Future<List<FeaturePhoto>> getFeatureImages() async {
     var dbClient = await db;
-    List<Map> maps =
-        await dbClient.query(TABLE, columns: [FEATURE_ID, FEATURES, DELETE_FEATURE]);
+    List<Map> maps = await dbClient
+        .query(TABLE, columns: [FEATURE_ID, FEATURES, DELETE_FEATURE]);
     List<FeaturePhoto> featureList = [];
     for (int i = 0; i < maps.length; i++) {
       if (FeaturePhoto.fromMap(maps[i]).path != null)
@@ -356,10 +368,8 @@ class PhotoProvider {
     var dbClient = await db;
     List<FeaturePhoto> featureList = await getFeatureImages();
     FeaturePhoto temp = FeaturePhoto();
-    for(int i = 0; i < featureList.length; i++)
-    {
-      if(featureList[i].path == path)
-      {
+    for (int i = 0; i < featureList.length; i++) {
+      if (featureList[i].path == path) {
         temp = featureList[i];
         break;
       }
@@ -368,7 +378,8 @@ class PhotoProvider {
       temp.delete = 1;
     else
       temp.delete = 0;
-    await dbClient.update(TABLE, temp.toMap(), where: '$FEATURES = ?', whereArgs: [path]);
+    await dbClient
+        .update(TABLE, temp.toMap(), where: '$FEATURES = ?', whereArgs: [path]);
   }
 
   Future<void> resetDeleteFeatures() async {
@@ -379,6 +390,44 @@ class PhotoProvider {
       temp.delete = 0;
       await dbClient.update(TABLE, temp.toMap(),
           where: '$FEATURES = ?', whereArgs: [featureList[i].path]);
+    }
+  }
+
+  Future<void> markForShare(String path) async {
+    var dbClient = await db;
+    List<Photo> photosList = await getPhotosList();
+    Photo temp = Photo();
+    for (int i = 0; i < photosList.length; i++) {
+      if (photosList[i].photoPath == path) {
+        temp = photosList[i];
+        break;
+      }
+    }
+    if (temp.share == 0)
+      temp.share = 1;
+    else
+      temp.share = 0;
+    await dbClient
+        .update(TABLE, temp.toMap(), where: '$PATH = ?', whereArgs: [path]);
+  }
+
+  Future<List<Photo>> getSharedImages() async {
+    List<Photo> photosList = await getPhotosList();
+    List<Photo> sharedPhotos = List<Photo>();
+    for (Photo photo in photosList) {
+      if (photo.share == 1) sharedPhotos.add(photo);
+    }
+    return sharedPhotos;
+  }
+
+  Future<void> resetSharing() async {
+    var dbClient = await db;
+    List<Photo> photosList = await getPhotosList();
+    for (int i = 0; i < photosList.length; i++) {
+      Photo temp = photosList[i];
+      temp.share = 0;
+      await dbClient.update(TABLE, temp.toMap(),
+          where: '$PATH = ?', whereArgs: [photosList[i].photoPath]);
     }
   }
 

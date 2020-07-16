@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gallery_app/views/dialogs/move_photos_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:gallery_app/providers/photo_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wc_flutter_share/wc_flutter_share.dart';
 
 import 'models/photo.dart';
 import 'staggered_grid.dart';
@@ -11,7 +14,7 @@ import 'models/photo_settings.dart';
 
 class GridViewGallery extends StatefulWidget {
   final String itemHolder;
-  final VoidCallback albumRefresh;
+  final Function albumRefresh;
 
   GridViewGallery({Key key, @required this.itemHolder, this.albumRefresh})
       : super(key: key);
@@ -28,6 +31,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
   ImagePicker imagePicker;
   bool deletion;
   bool moving;
+  bool sharing;
+  double gridCrossAxisExtent;
   final scaffoldState = GlobalKey<ScaffoldState>();
 
   @override
@@ -38,6 +43,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     imagePicker = ImagePicker();
     deletion = false;
     moving = false;
+    sharing = false;
+    _assignInitialGridSize();
     refreshImages();
   }
 
@@ -64,9 +71,11 @@ class _GridViewGalleryState extends State<GridViewGallery> {
           album: widget.itemHolder,
           favorite: 0,
           delete: 0,
-          move: 0);
+          move: 0,
+          share: 0);
       photoProvider.save(photo);
     }
+    widget.albumRefresh();
     refreshImages();
   }
 
@@ -80,6 +89,7 @@ class _GridViewGalleryState extends State<GridViewGallery> {
         refreshImages();
       }
     });
+    widget.albumRefresh();
   }
 
   removeDeleteWhenLiked() {
@@ -99,9 +109,21 @@ class _GridViewGalleryState extends State<GridViewGallery> {
         refreshImages();
       }
     });
+    widget.albumRefresh();
   }
 
-  shareImages() async {}
+  shareImageFromGallery() async {
+    setState(() {
+      if (sharing) {
+        photoProvider.resetSharing();
+        sharing = false;
+      } else {
+        sharing = true;
+        refreshImages();
+      }
+    });
+    widget.albumRefresh();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,28 +138,32 @@ class _GridViewGalleryState extends State<GridViewGallery> {
               moveImageFromGallery();
               deletion = false;
               moving = false;
-              Navigator.pop(context);
+              sharing = false;
+              Navigator.pop(context, true);
             }),
         actions: <Widget>[
           IconButton(
               icon: Icon(Icons.delete),
               onPressed: () {
-                if (moving) {
+                if (moving || sharing) {
                   moving = false;
+                  sharing = false;
                   Navigator.pop(context);
                 }
                 deleteImageFromGallery();
                 showDeleteBottomSheet(scaffoldState, deletion);
               }),
           IconButton(
-              icon: Icon(Icons.share),
+              icon: Icon(Icons.apps),
               onPressed: () {
                 if (moving || deletion) {
                   moving = false;
                   deletion = false;
                   Navigator.pop(context);
                 }
-                shareImages;
+                changeGridSize();
+                //shareImageFromGallery();
+                //showShareBottomSheet(scaffoldState, sharing);
               }),
           PopupMenuButton<String>(
             onSelected: settingsAction,
@@ -157,21 +183,36 @@ class _GridViewGalleryState extends State<GridViewGallery> {
         deleteSelect: removeDeleteWhenLiked,
         deletion: deletion,
         moving: moving,
+        sharing: sharing,
+        gridCrossAxisExtent: gridCrossAxisExtent,
       ),
     );
   }
+/*
+  void changeGridSize() {
+    setState(() {
+      if (gridCrossAxisExtent == 150)
+        gridCrossAxisExtent = 225;
+      else if (gridCrossAxisExtent == 225)
+        gridCrossAxisExtent = MediaQuery.of(context).size.width;
+      else
+        gridCrossAxisExtent = 150;
+    });
+  }*/
 
   void settingsAction(String selection) {
     if (selection == PhotoSettings.ADD) {
-      if (moving || deletion) {
+      if (moving || deletion || sharing) {
         moving = false;
         deletion = false;
+        sharing = false;
         Navigator.pop(context);
       }
       addImageFromGallery();
     } else if (selection == PhotoSettings.MOVE) {
-      if (deletion) {
+      if (deletion || sharing) {
         deletion = false;
+        sharing = false;
         Navigator.pop(context);
       }
       moveImageFromGallery();
@@ -182,6 +223,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
   @override
   void dispose() {
     photoProvider.resetDeletion();
+    photoProvider.resetMoving();
+    photoProvider.resetMoving();
     super.dispose();
   }
 
@@ -212,8 +255,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
                           onPressed: () {
                             deleteImages(widget.itemHolder);
                             Navigator.pop(context);
-                            deleteImageFromGallery();
                             widget.albumRefresh();
+                            deleteImageFromGallery();
                           },
                           child: Text('Delete')),
                     ],
@@ -259,8 +302,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
                             moveImages(widget.itemHolder);
                             //Navigator.pop(context);
                             //moveImageFromGallery();
-                            refreshImages();
                             widget.albumRefresh();
+                            refreshImages();
                             //moveImageFromGallery();
                           },
                           child: Text('Move')),
@@ -279,13 +322,54 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     }
   }
 
-  void deleteImages(String albumName) async {
-    await photoProvider.deleteImages(albumName);
-    refreshImages();
+  void showShareBottomSheet(GlobalKey<ScaffoldState> key, bool sharing) {
+    if (sharing) {
+      var bottomSheetController =
+          key.currentState.showBottomSheet((context) => Container(
+                color: Theme.of(context).canvasColor,
+                height: 50,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(10),
+                      topRight: const Radius.circular(10),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      FlatButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            shareImageFromGallery();
+                          },
+                          child: Text('Cancel')),
+                      FlatButton(
+                          onPressed: () {
+                            shareImages(context);
+                            Navigator.pop(context);
+                            widget.albumRefresh();
+                            shareImageFromGallery();
+                          },
+                          child: Text('Share')),
+                    ],
+                  ),
+                ),
+              ));
+      bottomSheetController.closed.then((value) {
+        setState(() {
+          sharing = false;
+          refreshImages();
+        });
+      });
+    } else {
+      Navigator.pop(context);
+    }
   }
 
-  void moveImagesD(String albumName, String destinationAlbum) async {
-    await photoProvider.moveImages(albumName, destinationAlbum);
+  void deleteImages(String albumName) async {
+    await photoProvider.deleteImages(albumName);
     refreshImages();
   }
 
@@ -301,5 +385,58 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     Navigator.pop(context);
     moveImageFromGallery();
     refreshImages();
+  }
+
+  void shareImages(BuildContext context) async {
+    List<Photo> photosList = await photoProvider.getSharedImages();
+    debugPrint("Length " + photosList.length.toString());
+    if (photosList != null && photosList.length > 0) {
+      for (Photo photo in photosList) {
+        final ByteData bytes =
+            ByteData.view(File(photo.photoPath).readAsBytesSync().buffer);
+        await WcFlutterShare.share(
+            sharePopupTitle: 'Share',
+            fileName: ' ',
+            mimeType: 'image/png',
+            bytesOfFile: bytes.buffer.asUint8List());
+      }
+    }
+    refreshImages();
+  }
+
+  Future<double> getGridSizeFromSharedPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    final gridSize = prefs.getDouble('gridSize');
+    if (gridSize == null) {
+      return 150.0;
+    }
+    return gridSize;
+  }
+
+  Future<void> changeGridSize() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    double previousGridSize = await getGridSizeFromSharedPref();
+    setState(() {
+      if (previousGridSize == 225.0)
+        gridCrossAxisExtent = MediaQuery.of(context).size.width;
+      else if (gridCrossAxisExtent == 150.0)
+        gridCrossAxisExtent = 225.0;
+      else
+        gridCrossAxisExtent = 150.0;
+    });
+
+    await prefs.setDouble('gridSize', gridCrossAxisExtent);
+  }
+
+  _assignInitialGridSize() async {
+    final prefs = await SharedPreferences.getInstance();
+    final gridSize = prefs.getDouble('gridSize');
+    setState(() {
+      if (gridSize == null) {
+        gridCrossAxisExtent = 150.0;
+      }
+      gridCrossAxisExtent = gridSize;
+    });
   }
 }
