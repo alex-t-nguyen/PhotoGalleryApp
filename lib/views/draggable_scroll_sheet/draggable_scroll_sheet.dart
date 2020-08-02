@@ -42,6 +42,8 @@ class _DraggableScrollSheetState extends State<DraggableScrollSheet> {
         albumList.clear();
         albumList.addAll(value);
         albums = _getAlbums();
+        getNumFavorites().then((value) => photoData[0] = value);
+        getNumPhotos().then((value) => photoData[1] = value);
       });
     });
     super.didUpdateWidget(oldWidget);

@@ -10,7 +10,6 @@ class StaggeredGrid extends StatefulWidget {
   final List<Photo> photosList;
   final int numPhotos;
   final String albumName;
-  final VoidCallback deleteSelect;
   final bool deletion;
   final bool moving;
   final bool sharing;
@@ -20,7 +19,6 @@ class StaggeredGrid extends StatefulWidget {
       {this.photosList,
       this.numPhotos,
       this.albumName,
-      this.deleteSelect,
       this.deletion,
       this.moving,
       this.sharing,
@@ -50,10 +48,11 @@ class _StaggeredGridState extends State<StaggeredGrid> {
             crossAxisSpacing: 2.0,
             children: _buildGridTile(widget.photosList.length),
           )
-        : Center(
+        : Center()
+          /*
             child: CircularProgressIndicator(
                 valueColor:
-                    AlwaysStoppedAnimation<Color>(const Color(0xff01C699))));
+                    AlwaysStoppedAnimation<Color>(const Color(0xff01C699))))*/;
   }
 
   List<Widget> _buildGridTile(numPhotos) {
@@ -105,7 +104,7 @@ class _StaggeredGridState extends State<StaggeredGrid> {
                     },
                   ))),
           Align(
-              // Share photos checkbox
+              // Share photos checkbox -> Removed/replaced with changeGridSize
               alignment: Alignment(-1.0, -1.0),
               child: Visibility(
                   visible: widget.sharing,

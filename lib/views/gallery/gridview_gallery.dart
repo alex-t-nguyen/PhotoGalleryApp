@@ -44,7 +44,7 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     deletion = false;
     moving = false;
     sharing = false;
-    _assignInitialGridSize();
+    _assignInitialGridSize(); // initializes gridCrossAxisExtent
     refreshImages();
   }
 
@@ -79,7 +79,7 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     refreshImages();
   }
 
-  deleteImageFromGallery() {
+  deleteImageFromGallery() async {
     setState(() {
       if (deletion) {
         photoProvider.resetDeletion();
@@ -90,13 +90,6 @@ class _GridViewGalleryState extends State<GridViewGallery> {
       }
     });
     widget.albumRefresh();
-  }
-
-  removeDeleteWhenLiked() {
-    //setState(() {
-    photoProvider.resetDeletion();
-    deletion = false;
-    //});
   }
 
   moveImageFromGallery() async {
@@ -127,64 +120,73 @@ class _GridViewGalleryState extends State<GridViewGallery> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: scaffoldState,
-      appBar: AppBar(
-        title: Text(widget.itemHolder),
-        leading: IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              deleteImageFromGallery();
-              moveImageFromGallery();
-              deletion = false;
-              moving = false;
-              sharing = false;
-              Navigator.pop(context, true);
-            }),
-        actions: <Widget>[
-          IconButton(
-              icon: Icon(Icons.delete),
+    return WillPopScope(
+      onWillPop: () {
+        deleteImageFromGallery();
+        moveImageFromGallery();
+        deletion = false;
+        moving = false;
+        Navigator.pop(context, true);
+        return;
+      },
+          child: Scaffold(
+        key: scaffoldState,
+        appBar: AppBar(
+          title: Text(widget.itemHolder),
+          leading: IconButton(
+              icon: Icon(Icons.arrow_back),
               onPressed: () {
-                if (moving || sharing) {
-                  moving = false;
-                  sharing = false;
-                  Navigator.pop(context);
-                }
                 deleteImageFromGallery();
-                showDeleteBottomSheet(scaffoldState, deletion);
+                moveImageFromGallery();
+                deletion = false;
+                moving = false;
+                sharing = false;
+                Navigator.pop(context, true);
               }),
-          IconButton(
-              icon: Icon(Icons.apps),
-              onPressed: () {
-                if (moving || deletion) {
-                  moving = false;
-                  deletion = false;
-                  Navigator.pop(context);
-                }
-                changeGridSize();
-                //shareImageFromGallery();
-                //showShareBottomSheet(scaffoldState, sharing);
-              }),
-          PopupMenuButton<String>(
-            onSelected: settingsAction,
-            itemBuilder: (BuildContext context) {
-              return PhotoSettings.photoSettingsList.map((String selection) {
-                return PopupMenuItem<String>(
-                    value: selection, child: Text(selection));
-              }).toList();
-            },
-          ),
-        ],
-      ),
-      body: StaggeredGrid(
-        photosList: photosList,
-        numPhotos: photosList.length,
-        albumName: widget.itemHolder,
-        deleteSelect: removeDeleteWhenLiked,
-        deletion: deletion,
-        moving: moving,
-        sharing: sharing,
-        gridCrossAxisExtent: gridCrossAxisExtent,
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: () {
+                  if (moving || sharing) {
+                    moving = false;
+                    sharing = false;
+                    Navigator.pop(context, true);
+                  }
+                  deleteImageFromGallery();
+                  showDeleteBottomSheet(scaffoldState, deletion);
+                }),
+            IconButton(
+                icon: Icon(Icons.apps),
+                onPressed: () {
+                  if (moving || deletion) {
+                    moving = false;
+                    deletion = false;
+                    Navigator.pop(context);
+                  }
+                  changeGridSize();
+                  //shareImageFromGallery();
+                  //showShareBottomSheet(scaffoldState, sharing);
+                }),
+            PopupMenuButton<String>(
+              onSelected: settingsAction,
+              itemBuilder: (BuildContext context) {
+                return PhotoSettings.photoSettingsList.map((String selection) {
+                  return PopupMenuItem<String>(
+                      value: selection, child: Text(selection));
+                }).toList();
+              },
+            ),
+          ],
+        ),
+        body: StaggeredGrid(
+          photosList: photosList,
+          numPhotos: photosList.length,
+          albumName: widget.itemHolder,
+          deletion: deletion,
+          moving: moving,
+          sharing: sharing,
+          gridCrossAxisExtent: gridCrossAxisExtent,
+        ),
       ),
     );
   }
@@ -224,7 +226,6 @@ class _GridViewGalleryState extends State<GridViewGallery> {
   void dispose() {
     photoProvider.resetDeletion();
     photoProvider.resetMoving();
-    photoProvider.resetMoving();
     super.dispose();
   }
 
@@ -254,9 +255,10 @@ class _GridViewGalleryState extends State<GridViewGallery> {
                       FlatButton(
                           onPressed: () {
                             deleteImages(widget.itemHolder);
-                            Navigator.pop(context);
+                            //Navigator.pop(context);
+                            //deleteImageFromGallery();
                             widget.albumRefresh();
-                            deleteImageFromGallery();
+                            refreshImages();
                           },
                           child: Text('Delete')),
                     ],
@@ -370,6 +372,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
 
   void deleteImages(String albumName) async {
     await photoProvider.deleteImages(albumName);
+    Navigator.pop(context);
+    deleteImageFromGallery();
     refreshImages();
   }
 
@@ -420,7 +424,7 @@ class _GridViewGalleryState extends State<GridViewGallery> {
     setState(() {
       if (previousGridSize == 225.0)
         gridCrossAxisExtent = MediaQuery.of(context).size.width;
-      else if (gridCrossAxisExtent == 150.0)
+      else if (previousGridSize== 150.0)
         gridCrossAxisExtent = 225.0;
       else
         gridCrossAxisExtent = 150.0;
@@ -436,7 +440,8 @@ class _GridViewGalleryState extends State<GridViewGallery> {
       if (gridSize == null) {
         gridCrossAxisExtent = 150.0;
       }
-      gridCrossAxisExtent = gridSize;
+      else
+        gridCrossAxisExtent = gridSize;
     });
   }
 }

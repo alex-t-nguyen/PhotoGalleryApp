@@ -47,7 +47,7 @@ class _FeatureMenuState extends State<FeatureMenu> {
         ],
       ),*/
       body: Padding(
-        padding: const EdgeInsets.only(top: 32.0),
+        padding: const EdgeInsets.only(top: 24.0),
         child: Stack(
           children: <Widget>[
             Container(

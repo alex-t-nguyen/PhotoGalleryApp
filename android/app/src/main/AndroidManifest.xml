@@ -7,8 +7,8 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="gallery_app"
-        android:icon="@mipmap/ic_launcher">
+        android:label="Gallery H"
+        android:icon="@mipmap/gallery_app_icon">
        
         <activity
             android:name=".MainActivity"
