@@ -71,8 +71,6 @@ class _DeleteFeatureDialogState extends State<DeleteFeatureDialog> {
                       children: List.generate(snapshot.data.length, (index) {
                         return GestureDetector(
                             onTap: () {
-                              debugPrint("Before toggle: " +
-                                  snapshot.data[index].delete.toString());
                               setState(() {
                                 _toggleDelete(index);
                                 snapshot.data[index].delete == 1

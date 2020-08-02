@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:gallery_app/providers/photo_provider.dart';
 import 'package:gallery_app/views/gallery/models/feature_photo.dart';
 
 import 'carousel_indicator.dart';
@@ -16,7 +15,6 @@ class Carousel extends StatefulWidget {
 }
 
 class _CarouselState extends State<Carousel> {
-  PhotoProvider _photoProvider = PhotoProvider();
   PageController pageController;
   bool pageFlag;
 
@@ -71,27 +69,31 @@ class _CarouselState extends State<Carousel> {
         title: Text('Photo Gallery'),
       ),
       body:*/
-        Column(
-      children: <Widget>[
         Container(
-          height: 250,
-          child: PageView.builder(
-              onPageChanged: _pageChanged,
-              controller: pageController,
-              //itemCount: images.length, //Giving item count makes scrolling finite
-              itemBuilder: (context, position) {
-                if (pageController.hasClients && pageFlag) {
-                  pageFlag = false;
-                  pageController.animateToPage(100,
-                      duration: Duration(microseconds: 1),
-                      curve: Curves.easeInOut);
-                }
-                return imageSlider(position);
-              }),
-        ),
-        CarouselIndicator(controller: pageController, itemCount: 5),
-      ],
-    ); //,
+          padding: EdgeInsets.only(top: 20),
+          child: Column(
+            children: <Widget>[
+              Container(
+                height: 300,
+                padding: EdgeInsets.only(bottom: 32),
+                child: PageView.builder(
+                    onPageChanged: _pageChanged,
+                    controller: pageController,
+                    //itemCount: images.length, //Giving item count makes scrolling finite
+                    itemBuilder: (context, position) {
+                      if (pageController.hasClients && pageFlag) {
+                        pageFlag = false;
+                        pageController.animateToPage(100,
+                            duration: Duration(microseconds: 1),
+                            curve: Curves.easeInOut);
+                      }
+                      return imageSlider(position);
+                    }),
+              ),
+              CarouselIndicator(controller: pageController, itemCount: 5),
+            ],
+          ),
+        ); //,
     //);
   }
 
@@ -104,10 +106,10 @@ class _CarouselState extends State<Carousel> {
           value = pageController.page - index;
           value = (1 - (value.abs() * 0.3)).clamp(0.0, 1.0);
         }
-        return Center(
+        return Center( // originally 200h 300w
           child: SizedBox(
-            height: Curves.easeInOut.transform(value) * 200,
-            width: Curves.easeInOut.transform(value) * 300,
+            height: Curves.easeInOut.transform(value) * 275,
+            width: Curves.easeInOut.transform(value) * 320,
             child: widget,
           ),
         );

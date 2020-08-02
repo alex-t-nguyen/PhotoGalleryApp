@@ -32,8 +32,8 @@ class _FeatureMenuState extends State<FeatureMenu> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Feature Menu'),
+      backgroundColor: const Color(0xff161616),
+      /*appBar: AppBar(
         actions: <Widget>[
           PopupMenuButton<String>(
               onSelected: settingsAction,
@@ -45,16 +45,29 @@ class _FeatureMenuState extends State<FeatureMenu> {
                 }).toList();
               }),
         ],
-      ),
-      body: Stack(
-        children: <Widget>[
-          Container(
-              color: const Color(0xff000000),
-              child: Carousel(feature: featuresList)),
-          // Can put container here to add space if needed
-          DraggableScrollSheet(),
-          AlbumFloatingActionButton(),
-        ],
+      ),*/
+      body: Padding(
+        padding: const EdgeInsets.only(top: 24.0),
+        child: Stack(
+          children: <Widget>[
+            Container(
+              //height: 350,
+                color: const Color(0xff161616),
+                /*decoration: BoxDecoration(
+                    image: DecorationImage(
+                  image: AssetImage('assets/images/MountainBackground.jpg'),
+                  fit: BoxFit.cover,
+                  colorFilter: new ColorFilter.mode(
+                      Colors.black.withOpacity(0.7), BlendMode.dstATop),
+                )),*/
+                child: Carousel(feature: featuresList)),
+            // Can put container here to add space if needed
+            DraggableScrollSheet(),
+            AlbumFloatingActionButton(
+              refreshMenu: refresh,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -91,6 +104,15 @@ class _FeatureMenuState extends State<FeatureMenu> {
   }
 
   _getFeatureList() async {
+    await _photoProvider.getFeatureImages().then((value) {
+      setState(() {
+        featuresList.clear();
+        featuresList.addAll(value);
+      });
+    });
+  }
+
+  void refresh() async {
     await _photoProvider.getFeatureImages().then((value) {
       setState(() {
         featuresList.clear();

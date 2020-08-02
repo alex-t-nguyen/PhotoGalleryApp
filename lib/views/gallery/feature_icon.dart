@@ -14,12 +14,12 @@ class FeatureIcon extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Expanded(
-            flex: 2,
+            flex: 1,
             //padding: const EdgeInsets.only(top: 25.0, bottom: 15.0),
             child: Icon(icon, color: iconColor, size: iconSize),
           ),
           Expanded(
-            //flex: 1,
+            flex: 1,
             //padding: const EdgeInsets.only(bottom: 25.0),
             child: Text(
               data.toString(),
